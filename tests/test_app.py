@@ -5,7 +5,7 @@ from textual.widgets import DataTable, Input
 
 from qxc.ui import app as app_module
 from qxc.ui.app import QxcApp
-from qxc.ui.screens import ConfirmLargeFile
+from qxc.ui.screens import ColumnPicker, ConfirmLargeFile
 
 
 def run(scenario):
@@ -178,5 +178,81 @@ def test_stale_result_is_ignored(tmp_path):  # Review Focus 5
             fresh = pd.DataFrame({"new": [1]})
             app._show_table(5, current, None, None, fresh, app_module.profile(fresh))
             assert list(app.df.columns) == ["new"]
+
+    run(scenario)
+
+
+def test_column_picker_limits_preview_columns(tmp_path):
+    (tmp_path / "wide.csv").write_text("a,b,c,d\n1,2,3,4\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            await pilot.press("c")
+            await pilot.pause()
+            assert isinstance(app.screen, ColumnPicker)
+            app.screen.dismiss(["b", "d"])
+            await pilot.pause()
+            assert app.selected_columns == ["b", "d"]
+
+    run(scenario)
+
+
+def test_column_picker_empty_result_resets_to_default(tmp_path):
+    (tmp_path / "wide.csv").write_text("a,b\n1,2\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            app.selected_columns = ["a"]
+            await pilot.press("c")
+            await pilot.pause()
+            app.screen.dismiss([])
+            await pilot.pause()
+            assert app.selected_columns is None
+
+    run(scenario)
+
+
+def test_c_does_nothing_before_a_file_is_open(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("c")
+            await pilot.pause()
+            assert not isinstance(app.screen, ColumnPicker)
+
+    run(scenario)
+
+
+def test_column_picker_enter_applies_the_checked_columns(tmp_path):
+    (tmp_path / "wide.csv").write_text("a,b,c,d\n1,2,3,4\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            await pilot.press("c")
+            await pilot.pause()
+            await pilot.press("down", "space")  # uncheck "b"
+            await pilot.press("enter")  # must apply, not toggle
+            await pilot.pause()
+            assert not isinstance(app.screen, ColumnPicker)
+            assert app.selected_columns == ["a", "c", "d"]
 
     run(scenario)

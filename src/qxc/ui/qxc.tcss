@@ -14,3 +14,6 @@ Input.invalid { border: tall red; }
 
 ConfirmLargeFile { align: center middle; }
 #dialog { width: 50; height: auto; padding: 1 2; border: thick $warning; background: $surface; }
+
+ColumnPicker { align: center middle; }
+#picker { width: 60; height: 70%; padding: 1 2; border: thick $primary; background: $surface; }

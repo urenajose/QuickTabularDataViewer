@@ -16,7 +16,7 @@ from qxc.loader import LoaderError, SheetInfo, is_large, list_sheets, load_table
 from qxc.profiler import Profile, build_preview, profile
 from qxc.scanner import FileRecord, filter_files, parse_date, scan
 from qxc.ui.render import render_preview, render_profile
-from qxc.ui.screens import ConfirmLargeFile
+from qxc.ui.screens import ColumnPicker, ConfirmLargeFile
 
 # (label, extensions) in the order the ``t`` key cycles through them
 TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
@@ -49,6 +49,7 @@ class QxcApp(App):
         ("slash", "focus_search", "Search"),
         ("d", "focus_dates", "Dates"),
         ("t", "cycle_type", "Type"),
+        ("c", "pick_columns", "Columns"),
         ("f5", "refresh", "Refresh"),
         ("escape", "focus_files", "Files"),
         ("q", "quit", "Quit"),
@@ -170,6 +171,20 @@ class QxcApp(App):
     def action_refresh(self) -> None:
         self._set_status("Scanning…")
         self.rescan()
+
+    def action_pick_columns(self) -> None:
+        if self.df is None:
+            return
+        shown = build_preview(self.df, 10, self._columns_that_fit(), self.selected_columns).head.columns
+        names = [str(c) for c in self.df.columns]
+
+        def after(chosen: list[str] | None) -> None:
+            if chosen is None:
+                return
+            self.selected_columns = chosen or None
+            self._render_views()
+
+        self.push_screen(ColumnPicker(names, set(shown)), after)
 
     # ----------------------------------------------------------- open a file
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
