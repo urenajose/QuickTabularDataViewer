@@ -55,3 +55,19 @@ def test_profile_lists_columns_and_stats():
 def test_profile_of_empty_table_renders():  # Review Focus 4
     out = text_of(render_profile(profile(pd.DataFrame())))
     assert "0 rows" in out
+
+
+def test_numbers_are_never_in_scientific_notation():  # review #2
+    from qxc.ui.render import _cell
+
+    assert _cell(1500000.0).plain == "1500000"
+    assert _cell(123456789012.0).plain == "123456789012"
+    assert _cell(1234567.89).plain == "1234567.89"
+    assert _cell(0.1 + 0.2).plain == "0.3"
+    assert _cell(float("nan")).plain == "null"
+
+
+def test_float_id_column_with_a_blank_shows_full_digits():  # review #2
+    df = pd.DataFrame({"id": [123456789012.0, None, 1234567.0]})
+    out = text_of(render_preview(build_preview(df)))
+    assert "123456789012" in out and "e+" not in out

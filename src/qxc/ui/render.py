@@ -21,7 +21,10 @@ def _cell(value) -> Text:
     if value is None or (not isinstance(value, (list, tuple, dict, set)) and pd.isna(value)):
         return Text("null", style="dim italic")
     if isinstance(value, float):
-        return Text(f"{value:,.6g}")
+        # Plain digits, never scientific notation: IDs and amounts must stay readable.
+        if value.is_integer() and abs(value) < 1e15:
+            return Text(str(int(value)))
+        return Text(f"{value:.15g}")
     return Text(str(value))
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.screen import ModalScreen
@@ -59,7 +60,8 @@ class ColumnPicker(ModalScreen["list[str] | None"]):
     def compose(self) -> ComposeResult:
         with Vertical(id="picker"):
             yield Label("Choose columns (space = toggle, Enter = apply, Esc = cancel)")
-            yield _Checklist(*[(name, name, name in self.checked) for name in self.all_columns])
+            # Text(...) so names such as [/] are shown literally instead of read as markup
+            yield _Checklist(*[(Text(name), name, name in self.checked) for name in self.all_columns])
 
     def action_confirm(self) -> None:
         chosen = set(self.query_one(_Checklist).selected)

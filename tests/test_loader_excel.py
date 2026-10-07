@@ -59,3 +59,36 @@ def test_xls_reads():
     sheets = list_sheets(SAMPLE_XLS)
     assert sheets
     assert not load_table(SAMPLE_XLS, sheet=sheets[0].name).empty
+
+
+def test_list_sheets_does_not_load_every_cell(sample_xlsx, monkeypatch):  # review #3
+    import openpyxl
+
+    def boom(*args, **kwargs):
+        raise AssertionError("list_sheets must not load the whole workbook")
+
+    monkeypatch.setattr(openpyxl, "load_workbook", boom)
+    sheets = {s.name: s for s in list_sheets(sample_xlsx)}
+    assert (sheets["Sales"].rows, sheets["Sales"].cols) == (4, 2)
+    assert sheets["Sales"].tables == ("SalesTable",)
+    assert (sheets["Blank"].rows, sheets["Blank"].cols) == (0, 0)
+
+
+def test_xlsx_sheet_with_one_cell_and_special_characters(tmp_path):  # review #3
+    from openpyxl import Workbook
+    from openpyxl.worksheet.table import Table
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "R&D <1>"
+    ws.append(["k", "v"])
+    ws.append(["a", 1])
+    ws.add_table(Table(displayName="R_D", ref="A1:B2"))
+    one = wb.create_sheet("One")
+    one["A1"] = "x"
+    path = tmp_path / "odd.xlsx"
+    wb.save(path)
+    sheets = {s.name: s for s in list_sheets(path)}
+    assert sheets["R&D <1>"].tables == ("R_D",)
+    assert (sheets["One"].rows, sheets["One"].cols) == (1, 1)
+    assert load_table(path, sheet="R&D <1>", table="R_D").shape == (1, 2)

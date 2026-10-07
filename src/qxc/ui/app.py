@@ -27,7 +27,12 @@ TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
     ("ods", frozenset({".ods"})),
 ]
 SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
-COLUMN_WIDTH = 15  # rough width of one preview column, used to pick how many fit
+COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
+
+
+def columns_that_fit(width: int) -> int:
+    """How many columns to show at each end of the preview (1 to 5)."""
+    return max(1, min(5, (width // COLUMN_WIDTH) // 2))
 
 
 def human_size(size: int) -> str:
@@ -68,6 +73,7 @@ class QxcApp(App):
         self.df: pd.DataFrame | None = None
         self.profile_result: Profile | None = None
         self.selected_columns: list[str] | None = None
+        self.status_message = ""
         self._token = 0  # bumped on every new selection so old results can be ignored
 
     # ---------------------------------------------------------------- layout
@@ -137,21 +143,22 @@ class QxcApp(App):
         for rec in self.shown_files:
             table.add_row(
                 str(rec.level),
-                rec.name,
-                rec.rel_dir or ".",
+                Text(rec.name),  # Text so names such as "Report [final].csv" are not read as markup
+                Text(rec.rel_dir or "."),
                 f"{rec.modified:%Y-%m-%d %H:%M}",
                 human_size(rec.size),
                 key=str(rec.path),
             )
-        if self.records:
+        if self.shown_files:
             self._set_status(f"{len(self.shown_files)} of {len(self.records)} files · depth {self.depth}")
         else:
-            self._set_status("No files match" if self.depth == 0 else "No files found")
+            self._set_status("No files match")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self.apply_filters()
 
     def _set_status(self, message: str) -> None:
+        self.status_message = message
         self.query_one("#status", Static).update(Text(message))
 
     # --------------------------------------------------------------- actions
@@ -183,8 +190,10 @@ class QxcApp(App):
         names = [str(c) for c in self.df.columns]
 
         def after(chosen: list[str] | None) -> None:
-            if chosen is None:
+            if chosen is None or self.df is None:
                 return
+            if not set(chosen) <= {str(c) for c in self.df.columns}:
+                return  # the table changed while the picker was open
             self.selected_columns = chosen or None
             self._render_views()
 
@@ -229,6 +238,9 @@ class QxcApp(App):
         except LoaderError as exc:
             self.call_from_thread(self._show_error, token, str(exc))
             return
+        except Exception as exc:  # one bad file must never stop the app
+            self.call_from_thread(self._show_error, token, f"Unexpected error: {type(exc).__name__}: {exc}")
+            return
         self.call_from_thread(self._show_sheets, token, record, sheets)
 
     def _show_sheets(self, token: int, record: FileRecord, sheets: list[SheetInfo]) -> None:
@@ -262,6 +274,9 @@ class QxcApp(App):
             self._load_target(self.current, parts[1], parts[2])
 
     def _load_target(self, record: FileRecord, sheet: str | None, table: str | None) -> None:
+        self.df = None  # the old table is no longer current
+        self.profile_result = None
+        self.selected_columns = None
         self.query_one("#preview", Static).update(Text("Loading…", style="dim"))
         self._load_table(self._token, record, sheet, table)
 
@@ -272,6 +287,9 @@ class QxcApp(App):
             result = profile(df)
         except LoaderError as exc:
             self.call_from_thread(self._show_error, token, str(exc))
+            return
+        except Exception as exc:  # one bad file must never stop the app
+            self.call_from_thread(self._show_error, token, f"Unexpected error: {type(exc).__name__}: {exc}")
             return
         self.call_from_thread(self._show_table, token, record, sheet, table, df, result)
 
@@ -297,15 +315,19 @@ class QxcApp(App):
         self._set_status(f"{record.name}{where} · {len(df):,} rows")
 
     def _columns_that_fit(self) -> int:
-        width = self.query_one("#preview-box").size.width or 80
-        return max(1, min(5, (width // COLUMN_WIDTH) // 2))
+        return columns_that_fit(self.query_one("#preview-box").size.width or 80)
 
     def _render_views(self) -> None:
         if self.df is None or self.profile_result is None:
             return
-        preview = build_preview(self.df, 10, self._columns_that_fit(), self.selected_columns)
-        self.query_one("#preview", Static).update(render_preview(preview))
-        self.query_one("#profile", Static).update(render_profile(self.profile_result))
+        try:
+            preview = build_preview(self.df, 10, self._columns_that_fit(), self.selected_columns)
+            self.query_one("#preview", Static).update(render_preview(preview))
+            self.query_one("#profile", Static).update(render_profile(self.profile_result))
+        except Exception as exc:  # show the problem instead of closing the app
+            message = f"Cannot display this table: {type(exc).__name__}: {exc}"
+            self.query_one("#preview", Static).update(Text(message, style="bold red"))
+            self._set_status(message)
 
     def on_resize(self) -> None:
         self.query_one("#main").set_class(self.size.width < 110, "narrow")

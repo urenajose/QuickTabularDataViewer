@@ -276,3 +276,125 @@ def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
             assert not app.query_one("#main").has_class("narrow")
 
     run(scenario)
+
+
+def test_file_names_with_brackets_show_literally(tmp_path):  # review #5
+    from rich.text import Text
+
+    (tmp_path / "Report [final].csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            row = app.query_one("#files", DataTable).get_row(str(tmp_path / "Report [final].csv"))
+            assert isinstance(row[1], Text) and row[1].plain == "Report [final].csv"
+
+    run(scenario)
+
+
+def test_no_files_match_message_when_filters_hide_everything(tmp_path):  # review #8
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QxcApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#search", Input).value = "zzz"
+            await pilot.pause()
+            assert "No files match" in app.status_message
+
+    run(scenario)
+
+
+def test_picker_survives_markup_like_column_names(tmp_path):  # review #1
+    (tmp_path / "odd.csv").write_text("[/],[red]x[/red],b\n1,2,3\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            await pilot.press("c")
+            await pilot.pause()
+            assert isinstance(app.screen, ColumnPicker)
+
+    run(scenario)
+
+
+def test_switching_sheet_clears_old_table_state(tmp_path):  # review #4
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    wb.active.title = "A"
+    wb.active.append(["x"])
+    wb.active.append([1])
+    wb.create_sheet("B").append(["y"])
+    path = tmp_path / "two.xlsx"
+    wb.save(path)
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            assert app.df is not None
+            app.selected_columns = ["x"]
+            app._load_target(app.current, "B", None)  # starts loading sheet B
+            assert app.df is None and app.selected_columns is None
+            await pilot.press("c")
+            await pilot.pause()
+            assert not isinstance(app.screen, ColumnPicker)
+
+    run(scenario)
+
+
+def test_picker_result_with_unknown_columns_is_ignored(tmp_path):  # review #4
+    (tmp_path / "wide.csv").write_text("a,b\n1,2\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            await pilot.press("c")
+            await pilot.pause()
+            app.screen.dismiss(["not-a-column"])
+            await pilot.pause()
+            assert app.selected_columns is None
+
+    run(scenario)
+
+
+def test_unexpected_error_while_profiling_is_shown_not_fatal(tmp_path, monkeypatch):  # review #6
+    folder = make_folder(tmp_path)
+
+    def boom(df):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(app_module, "profile", boom)
+
+    async def scenario():
+        app = QxcApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            assert app.df is None
+            assert "boom" in app.status_message
+
+    run(scenario)
+
+
+def test_columns_that_fit_scales_with_width_up_to_five():  # review #7
+    assert app_module.columns_that_fit(200) == 5
+    assert app_module.columns_that_fit(100) == 5
+    assert app_module.columns_that_fit(60) == 3
+    assert app_module.columns_that_fit(0) == 1

@@ -67,3 +67,13 @@ def test_unsupported_extension_raises(tmp_path):
 def test_is_large_boundary():
     assert not is_large(LARGE_FILE_BYTES)
     assert is_large(LARGE_FILE_BYTES + 1)
+
+
+def test_long_digit_ids_with_blanks_stay_text(tmp_path):  # review #2
+    df = load_table(write(tmp_path / "id.csv", "id,x\n1234567890123456,1\n,2\n"))
+    assert df["id"].iloc[0] == "1234567890123456"
+
+
+def test_ragged_row_is_not_shifted(tmp_path):  # review #9
+    df = load_table(write(tmp_path / "r.csv", "a,b\n1,2,3,4\n"))
+    assert df.iloc[0].tolist() == [1, 2]

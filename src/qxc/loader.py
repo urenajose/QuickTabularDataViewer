@@ -7,9 +7,13 @@ Phase 1 is read-only.
 
 from __future__ import annotations
 
+import posixpath
 import re
+import warnings
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 import pandas as pd
 
@@ -17,6 +21,11 @@ LARGE_FILE_BYTES = 50 * 1024 * 1024
 _LEADING_ZERO = re.compile(r"^0\d")
 _OLE_MAGIC = b"\xd0\xcf\x11\xe0"  # an .xlsx that starts like this is encrypted
 _XLSX_EXTS = (".xlsx", ".xlsm")
+_LONG_DIGITS = re.compile(r"\d{16,}")  # too long for a float to hold exactly
+_NS = {
+    "m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+}
 
 
 class LoaderError(Exception):
@@ -65,6 +74,8 @@ def _infer_types(df: pd.DataFrame) -> pd.DataFrame:
         values = df[col].dropna()
         if values.empty or values.str.match(_LEADING_ZERO).any():
             continue
+        if values.str.fullmatch(_LONG_DIGITS).any():
+            continue
         converted = pd.to_numeric(df[col], errors="coerce")
         if converted.notna().sum() == df[col].notna().sum():
             df[col] = converted
@@ -75,7 +86,11 @@ def _read_csv(path: Path) -> pd.DataFrame:
     last_error: Exception | None = None
     for encoding in ("utf-8-sig", "cp1252", "latin-1"):
         try:
-            return _infer_types(pd.read_csv(path, dtype=str, encoding=encoding))
+            with warnings.catch_warnings():
+                # Extra fields on a row are dropped (index_col=False); pandas warns about that,
+                # and a warning printed over the terminal screen would be noise.
+                warnings.simplefilter("ignore", pd.errors.ParserWarning)
+                return _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False))
         except UnicodeDecodeError as exc:
             last_error = exc
         except pd.errors.EmptyDataError:
@@ -150,20 +165,60 @@ def load_table(path: Path | str, sheet: str | None = None, table: str | None = N
     return clean_columns(df)
 
 
-def _xlsx_sheets(path: Path) -> list[SheetInfo]:
-    from openpyxl import load_workbook
+def _resolve(base_dir: str, target: str) -> str:
+    """Turn a relationship target into a path inside the zip file."""
+    if target.startswith("/"):
+        return target[1:]
+    return posixpath.normpath(posixpath.join(base_dir, target))
 
-    # Not read-only mode: named Tables are only available in normal mode.
-    workbook = load_workbook(path, data_only=True)
-    try:
-        sheets = []
-        for ws in workbook.worksheets:
-            is_blank = ws.max_row == 1 and ws.max_column == 1 and ws["A1"].value is None
-            rows, cols = (0, 0) if is_blank else (ws.max_row, ws.max_column)
-            sheets.append(SheetInfo(ws.title, rows, cols, tuple(ws.tables.keys())))
-        return sheets
-    finally:
-        workbook.close()
+
+def _xlsx_layout(path: Path) -> list[tuple[str, str | None, dict[str, str]]]:
+    """Read sheet names, used range and named Tables straight from the zip.
+
+    No cell data is loaded, so this is fast even for large workbooks. Returns
+    ``(sheet name, used-range text or None, {table name: table range})`` per sheet.
+    """
+    from openpyxl.utils.cell import range_boundaries  # noqa: F401  (validates the import early)
+
+    layout = []
+    with zipfile.ZipFile(path) as archive:
+        workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+        rels = {r.get("Id"): r.get("Target") for r in ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))}
+        for sheet in workbook.find("m:sheets", _NS):
+            sheet_path = _resolve("xl", rels[sheet.get(f"{{{_NS['r']}}}id")])
+            head = archive.read(sheet_path) if archive.getinfo(sheet_path).file_size <= 65536 else None
+            if head is None:
+                with archive.open(sheet_path) as handle:
+                    head = handle.read(4096)
+            match = re.search(rb'<dimension ref="([^"]+)"', head)
+            ref = match.group(1).decode() if match else None
+            if ref and re.fullmatch(r"([A-Z]+\d+)(:\1)?", ref) and not re.search(rb"<c[ >]", head):
+                ref = ""  # a single-cell range with no cell inside: an empty sheet
+            tables: dict[str, str] = {}
+            rels_path = posixpath.join(posixpath.dirname(sheet_path), "_rels", posixpath.basename(sheet_path) + ".rels")
+            if rels_path in archive.namelist():
+                for rel in ET.fromstring(archive.read(rels_path)):
+                    if rel.get("Type", "").endswith("/table"):
+                        table = ET.fromstring(archive.read(_resolve(posixpath.dirname(sheet_path), rel.get("Target"))))
+                        tables[table.get("displayName") or table.get("name")] = table.get("ref")
+            layout.append((sheet.get("name"), ref, tables))
+    return layout
+
+
+def _xlsx_sheets(path: Path) -> list[SheetInfo]:
+    from openpyxl.utils.cell import range_boundaries
+
+    sheets = []
+    for name, ref, tables in _xlsx_layout(path):
+        if ref is None:
+            rows = cols = None
+        elif ref == "":
+            rows = cols = 0
+        else:
+            _, _, max_col, max_row = range_boundaries(ref)
+            rows, cols = max_row, max_col
+        sheets.append(SheetInfo(name, rows, cols, tuple(tables)))
+    return sheets
 
 
 def _xls_sheets(path: Path) -> list[SheetInfo]:
@@ -184,15 +239,23 @@ def _ods_sheets(path: Path) -> list[SheetInfo]:
 
 def _read_xlsx_table(path: Path, sheet: str | None, table: str) -> pd.DataFrame:
     from openpyxl import load_workbook
+    from openpyxl.utils.cell import range_boundaries
 
-    workbook = load_workbook(path, data_only=True)
+    layout = _xlsx_layout(path)
+    sheet_name = sheet or layout[0][0]
+    ref = next((tables[table] for name, _, tables in layout if name == sheet_name and table in tables), None)
+    if ref is None:
+        raise LoaderError(f"Table '{table}' not found on sheet '{sheet_name}'")
+    min_col, min_row, max_col, max_row = range_boundaries(ref)
+    workbook = load_workbook(path, data_only=True, read_only=True)
     try:
-        ws = workbook[sheet] if sheet else workbook.worksheets[0]
-        if table not in ws.tables:
-            raise LoaderError(f"Table '{table}' not found on sheet '{ws.title}'")
-        rows = [[cell.value for cell in row] for row in ws[ws.tables[table].ref]]
+        rows = list(
+            workbook[sheet_name].iter_rows(
+                min_row=min_row, max_row=max_row, min_col=min_col, max_col=max_col, values_only=True
+            )
+        )
     finally:
         workbook.close()
     if not rows:
         return pd.DataFrame()
-    return pd.DataFrame(rows[1:], columns=rows[0]).infer_objects()
+    return pd.DataFrame(rows[1:], columns=list(rows[0])).infer_objects()
