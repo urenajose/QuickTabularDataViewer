@@ -1,0 +1,16 @@
+#filters { height: 3; }
+#search { width: 1fr; }
+#type { width: 14; content-align: center middle; }
+#date-from, #date-to { width: 22; }
+Input.invalid { border: tall red; }
+
+#main { height: 1fr; }
+#files { width: 2fr; }
+#sheets { width: 30; }
+#right { width: 3fr; }
+#preview-box, #profile-box { height: 1fr; border: round $primary; }
+
+#status { height: 1; padding: 0 1; color: $text-muted; }
+
+ConfirmLargeFile { align: center middle; }
+#dialog { width: 50; height: auto; padding: 1 2; border: thick $warning; background: $surface; }
