@@ -150,18 +150,49 @@ def load_table(path: Path | str, sheet: str | None = None, table: str | None = N
     return clean_columns(df)
 
 
-# Excel / ODS readers are added in Task 4.
 def _xlsx_sheets(path: Path) -> list[SheetInfo]:
-    raise LoaderError("Excel support not built yet")
+    from openpyxl import load_workbook
+
+    # Not read-only mode: named Tables are only available in normal mode.
+    workbook = load_workbook(path, data_only=True)
+    try:
+        sheets = []
+        for ws in workbook.worksheets:
+            is_blank = ws.max_row == 1 and ws.max_column == 1 and ws["A1"].value is None
+            rows, cols = (0, 0) if is_blank else (ws.max_row, ws.max_column)
+            sheets.append(SheetInfo(ws.title, rows, cols, tuple(ws.tables.keys())))
+        return sheets
+    finally:
+        workbook.close()
 
 
 def _xls_sheets(path: Path) -> list[SheetInfo]:
-    raise LoaderError("Excel support not built yet")
+    import xlrd
+
+    book = xlrd.open_workbook(path, on_demand=True)
+    try:
+        return [SheetInfo(s.name, s.nrows, s.ncols) for s in (book.sheet_by_index(i) for i in range(book.nsheets))]
+    finally:
+        book.release_resources()
 
 
 def _ods_sheets(path: Path) -> list[SheetInfo]:
-    raise LoaderError("Excel support not built yet")
+    # Sizes are not available without reading each sheet, so only names are listed.
+    with pd.ExcelFile(path, engine="odf") as workbook:
+        return [SheetInfo(name) for name in workbook.sheet_names]
 
 
 def _read_xlsx_table(path: Path, sheet: str | None, table: str) -> pd.DataFrame:
-    raise LoaderError("Excel support not built yet")
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(path, data_only=True)
+    try:
+        ws = workbook[sheet] if sheet else workbook.worksheets[0]
+        if table not in ws.tables:
+            raise LoaderError(f"Table '{table}' not found on sheet '{ws.title}'")
+        rows = [[cell.value for cell in row] for row in ws[ws.tables[table].ref]]
+    finally:
+        workbook.close()
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows[1:], columns=rows[0]).infer_objects()
