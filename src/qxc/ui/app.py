@@ -50,6 +50,7 @@ class QxcApp(App):
         ("d", "focus_dates", "Dates"),
         ("t", "cycle_type", "Type"),
         ("c", "pick_columns", "Columns"),
+        ("p", "toggle_panel", "Preview/Profile"),
         ("f5", "refresh", "Refresh"),
         ("escape", "focus_files", "Files"),
         ("q", "quit", "Quit"),
@@ -167,6 +168,9 @@ class QxcApp(App):
         self.type_index = (self.type_index + 1) % len(TYPE_CHOICES)
         self.query_one("#type", Static).update(Text(f"Type: {TYPE_CHOICES[self.type_index][0]}"))
         self.apply_filters()
+
+    def action_toggle_panel(self) -> None:
+        self.query_one("#main").toggle_class("show-profile")
 
     def action_refresh(self) -> None:
         self._set_status("Scanning…")
@@ -304,4 +308,5 @@ class QxcApp(App):
         self.query_one("#profile", Static).update(render_profile(self.profile_result))
 
     def on_resize(self) -> None:
+        self.query_one("#main").set_class(self.size.width < 110, "narrow")
         self._render_views()

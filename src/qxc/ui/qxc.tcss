@@ -17,3 +17,7 @@ ConfirmLargeFile { align: center middle; }
 
 ColumnPicker { align: center middle; }
 #picker { width: 60; height: 70%; padding: 1 2; border: thick $primary; background: $surface; }
+
+#main.narrow #profile-box { display: none; }
+#main.narrow.show-profile #profile-box { display: block; }
+#main.narrow.show-profile #preview-box { display: none; }

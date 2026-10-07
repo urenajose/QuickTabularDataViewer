@@ -256,3 +256,23 @@ def test_column_picker_enter_applies_the_checked_columns(tmp_path):
             assert app.selected_columns == ["a", "c", "d"]
 
     run(scenario)
+
+
+def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(90, 40)) as pilot:
+            await settle(app, pilot)
+            main = app.query_one("#main")
+            assert main.has_class("narrow")
+            assert not main.has_class("show-profile")
+            await pilot.press("p")
+            assert main.has_class("show-profile")
+        app = QxcApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 40)) as pilot:
+            await settle(app, pilot)
+            assert not app.query_one("#main").has_class("narrow")
+
+    run(scenario)
