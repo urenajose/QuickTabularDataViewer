@@ -25,12 +25,9 @@ uv run pytest -v
 - Test files are built in temporary folders. No real client data is used.
 - `conftest.py` builds the sample `.xlsx` and `.ods` files.
 
-## Optional: the `.xls` test
+## The `.xls` test
 
-The `.xls` test is skipped until a small sample file exists at:
-
-`tests\data\sample.xls`
-
-Use a tiny file with a few rows and **no real client data**. Creating `.xls`
-files from code needs a library that has not been approved, so this one file is
-supplied by hand.
+The `.xls` test reads `tests/data/file_example_XLS_50.xls`, a public sample
+file with made-up names and data (no real client data). If the file is missing,
+the test is skipped. Creating `.xls` files from code needs a library that has
+not been approved, so this file is supplied by hand.

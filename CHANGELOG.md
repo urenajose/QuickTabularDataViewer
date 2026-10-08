@@ -13,6 +13,7 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+- The `.xls` test now runs against `tests/data/file_example_XLS_50.xls`.
 - The opened file is marked with a `●` in the first column and a light green
   row tint, so it is clear which file is open and which row the cursor is on.
 - The Preview and Profile panel titles show the opened file's name.

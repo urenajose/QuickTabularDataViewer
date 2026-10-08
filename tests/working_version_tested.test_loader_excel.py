@@ -4,7 +4,7 @@ import pytest
 
 from qtdv.loader import LoaderError, list_sheets, load_table
 
-SAMPLE_XLS = Path(__file__).parent / "data" / "file_example_XLS_50.xls"
+SAMPLE_XLS = Path(__file__).parent / "data" / "sample.xls"
 
 
 def test_xlsx_sheets_sizes_and_tables(sample_xlsx):
@@ -54,7 +54,7 @@ def test_corrupt_xlsx_is_a_loader_error(tmp_path):
         load_table(path)
 
 
-@pytest.mark.skipif(not SAMPLE_XLS.exists(), reason="tests/data/file_example_XLS_50.xls is missing")
+@pytest.mark.skipif(not SAMPLE_XLS.exists(), reason="Jose has not supplied tests/data/sample.xls")
 def test_xls_reads():
     sheets = list_sheets(SAMPLE_XLS)
     assert sheets
