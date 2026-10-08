@@ -38,6 +38,9 @@ default is `0`, which means only the files directly in the folder.
 | `qxc . -r 1` | the folder and its subfolders |
 | `qxc . -r 3` | the folder and 3 levels of subfolders |
 
+The file that is open shows a `●` in the first column and a light green row.
+The cursor row keeps its normal highlight, so you can tell the two apart.
+
 The `Lvl` column in the file list shows where each file lives: `0` is the
 folder you started in, `1` is a subfolder, `2` is a subfolder inside that, and
 so on. The selected file's full path and level also show in the header.

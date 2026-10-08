@@ -5,6 +5,12 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+### Added
+
+- The opened file is marked with a `●` in the first column and a light green
+  row tint, so it is clear which file is open and which row the cursor is on.
+- The Preview and Profile panel titles show the opened file's name.
+
 ## [0.1.0] - 2026-10-07
 
 ### Added

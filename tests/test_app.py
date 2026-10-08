@@ -288,7 +288,7 @@ def test_file_names_with_brackets_show_literally(tmp_path):  # review #5
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             row = app.query_one("#files", DataTable).get_row(str(tmp_path / "Report [final].csv"))
-            assert isinstance(row[1], Text) and row[1].plain == "Report [final].csv"
+            assert isinstance(row[2], Text) and row[2].plain == "Report [final].csv"
 
     run(scenario)
 
@@ -398,3 +398,91 @@ def test_columns_that_fit_scales_with_width_up_to_five():  # review #7
     assert app_module.columns_that_fit(100) == 5
     assert app_module.columns_that_fit(60) == 3
     assert app_module.columns_that_fit(0) == 1
+
+
+def marked_names(app):
+    """Names of the rows that carry the opened-file dot."""
+    table = app.query_one("#files", DataTable)
+    return [row[2].plain for row in (table.get_row(str(r.path)) for r in app.shown_files) if row[0].plain == "●"]
+
+
+def test_opened_file_gets_dot_and_green_tint_only_on_its_row(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QxcApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            assert marked_names(app) == []  # nothing opened yet
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            assert marked_names(app) == ["alpha.csv"]
+            table = app.query_one("#files", DataTable)
+            tinted = table.get_row(str(folder / "alpha.csv"))
+            plain = table.get_row(str(folder / "beta.csv"))
+            assert all("on #b7e4c7" in str(cell.style) for cell in tinted)
+            assert not any("#b7e4c7" in str(cell.style) for cell in plain)
+            await pilot.press("down", "enter")  # open the second file
+            await settle(app, pilot)
+            assert marked_names(app) == ["beta.csv"]
+
+    run(scenario)
+
+
+def test_mark_survives_a_filter_and_returns_after_it_is_cleared(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QxcApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            app.query_one("#search", Input).value = "bet"  # hides the opened file
+            await pilot.pause()
+            assert marked_names(app) == []
+            app.query_one("#search", Input).value = ""
+            await pilot.pause()
+            assert marked_names(app) == ["alpha.csv"]
+
+    run(scenario)
+
+
+def test_declining_the_large_file_prompt_does_not_move_the_mark(tmp_path, monkeypatch):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QxcApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")  # alpha opens normally
+            await settle(app, pilot)
+            monkeypatch.setattr(app_module, "is_large", lambda size: True)
+            await pilot.press("down", "enter")
+            await pilot.pause()
+            await pilot.press("n")
+            await settle(app, pilot)
+            assert marked_names(app) == ["alpha.csv"]
+
+    run(scenario)
+
+
+def test_panel_titles_name_the_opened_file(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QxcApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            assert app.query_one("#preview-box").border_title == "Preview"
+            assert app.query_one("#profile-box").border_title == "Profile"
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            assert app.query_one("#preview-box").border_title == "Preview · alpha.csv"
+            assert app.query_one("#profile-box").border_title == "Profile · alpha.csv"
+
+    run(scenario)

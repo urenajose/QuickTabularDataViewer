@@ -27,7 +27,6 @@ TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
     ("ods", frozenset({".ods"})),
 ]
 SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
-OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
 
 
@@ -70,7 +69,6 @@ class QxcApp(App):
         self.shown_files: list[FileRecord] = []
         self.type_index = 0
         self.current: FileRecord | None = None
-        self._column_keys: list = []
         self.sheets: list[SheetInfo] = []
         self.df: pd.DataFrame | None = None
         self.profile_result: Profile | None = None
@@ -99,10 +97,7 @@ class QxcApp(App):
 
     def on_mount(self) -> None:
         table = self.query_one("#files", DataTable)
-        self._column_keys = [table.add_column(" ", width=1)]  # the opened-file dot
-        self._column_keys += table.add_columns("Lvl", "Name", "Folder", "Modified", "Size")
-        self.query_one("#preview-box").border_title = "Preview"
-        self.query_one("#profile-box").border_title = "Profile"
+        table.add_columns("Lvl", "Name", "Folder", "Modified", "Size")
         self.query_one("#sheets", OptionList).display = False
         table.focus()
         self.rescan()
@@ -146,34 +141,18 @@ class QxcApp(App):
         table = self.query_one("#files", DataTable)
         table.clear()
         for rec in self.shown_files:
-            table.add_row(*self._row_cells(rec), key=str(rec.path))
+            table.add_row(
+                str(rec.level),
+                Text(rec.name),  # Text so names such as "Report [final].csv" are not read as markup
+                Text(rec.rel_dir or "."),
+                f"{rec.modified:%Y-%m-%d %H:%M}",
+                human_size(rec.size),
+                key=str(rec.path),
+            )
         if self.shown_files:
             self._set_status(f"{len(self.shown_files)} of {len(self.records)} files · depth {self.depth}")
         else:
             self._set_status("No files match")
-
-    def _row_cells(self, rec: FileRecord) -> list[Text]:
-        """Cells for one row. The opened file gets a dot and a light green tint."""
-        opened = rec == self.current
-        style = OPENED_STYLE if opened else ""
-        # Text so names such as "Report [final].csv" are not read as markup
-        return [
-            Text("●" if opened else " ", style=style),
-            Text(str(rec.level), style=style),
-            Text(rec.name, style=style),
-            Text(rec.rel_dir or ".", style=style),
-            Text(f"{rec.modified:%Y-%m-%d %H:%M}", style=style),
-            Text(human_size(rec.size), style=style),
-        ]
-
-    def _restyle_rows(self, *records: FileRecord | None) -> None:
-        """Redraw the given rows in place, so the cursor does not move."""
-        table = self.query_one("#files", DataTable)
-        for rec in records:
-            if rec is None or rec not in self.shown_files:
-                continue
-            for column_key, cell in zip(self._column_keys, self._row_cells(rec)):
-                table.update_cell(str(rec.path), column_key, cell)
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self.apply_filters()
@@ -241,10 +220,7 @@ class QxcApp(App):
 
     def _start_open(self, record: FileRecord) -> None:
         self._token += 1
-        previous, self.current = self.current, record
-        self._restyle_rows(previous, record)
-        self.query_one("#preview-box").border_title = f"Preview · {record.name}"
-        self.query_one("#profile-box").border_title = f"Profile · {record.name}"
+        self.current = record
         self.df = None
         self.profile_result = None
         self.selected_columns = None
