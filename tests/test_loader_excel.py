@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from qxc.loader import LoaderError, list_sheets, load_table
+from qtdv.loader import LoaderError, list_sheets, load_table
 
 SAMPLE_XLS = Path(__file__).parent / "data" / "sample.xls"
 

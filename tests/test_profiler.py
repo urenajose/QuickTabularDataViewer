@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from qxc.profiler import build_preview, profile
+from qtdv.profiler import build_preview, profile
 
 
 def frame(rows, cols):

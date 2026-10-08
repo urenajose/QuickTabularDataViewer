@@ -1,4 +1,4 @@
-"""Command line entry point for qxc."""
+"""Command line entry point for qtdv."""
 
 from __future__ import annotations
 
@@ -18,9 +18,9 @@ def _depth(text: str) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Read ``qxc [folder] [-r DEPTH]``."""
+    """Read ``qtdv [folder] [-r DEPTH]``."""
     parser = argparse.ArgumentParser(
-        prog="qxc",
+        prog="qtdv",
         description="Browse and profile CSV, Excel and LibreOffice Calc files in the terminal.",
     )
     parser.add_argument("folder", nargs="?", default=".", help="folder to scan (default: current folder)")
@@ -40,9 +40,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     folder = Path(args.folder)
     if not folder.is_dir():
-        print(f"qxc: not a folder: {folder}", file=sys.stderr)
+        print(f"qtdv: not a folder: {folder}", file=sys.stderr)
         return 2
-    from qxc.ui.app import QxcApp  # imported here so --help stays fast
+    from qtdv.ui.app import QxcApp  # imported here so --help stays fast
 
     QxcApp(folder, args.depth).run()
     return 0

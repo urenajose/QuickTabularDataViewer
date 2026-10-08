@@ -1,4 +1,4 @@
-# qxc package - what each file does
+# qtdv package - what each file does
 
 **Created:** 2026-10-07 01:50 PM -04:00
 
@@ -7,7 +7,7 @@ understand it without reading the others.
 
 | File | Job | Uses |
 |------|-----|------|
-| `cli.py` | Reads the command line (`qxc [folder] [-r DEPTH]`) and starts the app. | the app |
+| `cli.py` | Reads the command line (`qtdv [folder] [-r DEPTH]`) and starts the app. | the app |
 | `scanner.py` | Finds table files in a folder down to the chosen depth, and filters them by name, type and modified date. It never opens a file. | nothing else |
 | `loader.py` | **The only file that reads data files.** Lists sheets and named Tables, loads a table into a pandas DataFrame, and knows the 50 MB limit. | pandas, openpyxl, odfpy, xlrd |
 | `profiler.py` | Turns a DataFrame into plain results: the preview slice (first/last rows and columns) and the profile (rows, columns, nulls, unique counts, `describe()`). | pandas |

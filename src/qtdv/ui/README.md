@@ -1,4 +1,4 @@
-# qxc screen code
+# qtdv screen code
 
 **Created:** 2026-10-07 01:50 PM -04:00
 
@@ -7,7 +7,7 @@
 | `app.py` | The Textual app: lays out the screen, handles keys, and starts background loading. |
 | `render.py` | Turns preview and profile results into Rich tables. It has no Textual code, so it is easy to test. |
 | `screens.py` | The two pop-ups: the large-file question (`y`/`n`) and the column picker. |
-| `qxc.tcss` | Colors, sizes and the narrow-terminal layout rules. |
+| `qtdv.tcss` | Colors, sizes and the narrow-terminal layout rules. |
 
 ## Why drawing is separate from the app
 

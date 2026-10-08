@@ -1,4 +1,4 @@
-"""The qxc Textual application: layout, background loading and key actions."""
+"""The qtdv Textual application: layout, background loading and key actions."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import DataTable, Footer, Header, Input, OptionList, Static
 from textual.widgets.option_list import Option
 
-from qxc.loader import LoaderError, SheetInfo, is_large, list_sheets, load_table
-from qxc.profiler import Profile, build_preview, profile
-from qxc.scanner import FileRecord, filter_files, parse_date, scan
-from qxc.ui.render import render_preview, render_profile
-from qxc.ui.screens import ColumnPicker, ConfirmLargeFile
+from qtdv.loader import LoaderError, SheetInfo, is_large, list_sheets, load_table
+from qtdv.profiler import Profile, build_preview, profile
+from qtdv.scanner import FileRecord, filter_files, parse_date, scan
+from qtdv.ui.render import render_preview, render_profile
+from qtdv.ui.screens import ColumnPicker, ConfirmLargeFile
 
 # (label, extensions) in the order the ``t`` key cycles through them
 TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
@@ -48,8 +48,8 @@ def human_size(size: int) -> str:
 class QxcApp(App):
     """Browse table files in a folder and see a preview and profile of each."""
 
-    TITLE = "qxc"
-    CSS_PATH = "qxc.tcss"
+    TITLE = "qtdv"
+    CSS_PATH = "qtdv.tcss"
     BINDINGS = [
         ("slash", "focus_search", "Search"),
         ("d", "focus_dates", "Dates"),

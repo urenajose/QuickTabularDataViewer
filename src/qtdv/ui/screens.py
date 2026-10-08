@@ -1,4 +1,4 @@
-"""Pop-up screens for qxc."""
+"""Pop-up screens for qtdv."""
 
 from __future__ import annotations
 

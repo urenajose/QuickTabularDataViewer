@@ -1,9 +1,15 @@
 # Changelog
 
-All notable changes to qxc are listed here.
+All notable changes to qtdv are listed here.
 Format: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
+
+### Changed
+
+- The project is renamed from `qxc` (Quick Excel/CSV) to `qtdv` (Quick Tabular
+  Data Viewer). The command is now `qtdv`, the Python package is `qtdv`, and the
+  old `qxc` command is removed.
 
 ### Added
 

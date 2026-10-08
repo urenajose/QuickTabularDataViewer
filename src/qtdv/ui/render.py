@@ -11,7 +11,7 @@ from rich.console import Group
 from rich.table import Table
 from rich.text import Text
 
-from qxc.profiler import Preview, Profile
+from qtdv.profiler import Preview, Profile
 
 GAP = "…"
 DIVIDER = "⋮"

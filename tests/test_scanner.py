@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 import pytest
 
-from qxc.scanner import filter_files, parse_date, scan
+from qtdv.scanner import filter_files, parse_date, scan
 
 
 @pytest.fixture

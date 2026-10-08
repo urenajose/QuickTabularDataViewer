@@ -1,6 +1,6 @@
 import pytest
 
-from qxc.cli import main, parse_args
+from qtdv.cli import main, parse_args
 
 
 def test_defaults_are_current_folder_and_depth_zero():

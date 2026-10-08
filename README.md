@@ -1,9 +1,9 @@
-# qxc - Quick Excel/CSV viewer
+# qtdv - Quick Tabular Data Viewer
 
 **Created:** 2026-10-07 01:50 PM -04:00
 **Status:** Version 0.1.0 (Phase 1: view only)
 
-`qxc` is a terminal app, similar to Glow, but for table data. Run it in a
+`qtdv` is a terminal app, similar to Glow, but for table data. Run it in a
 folder, pick a spreadsheet-like file from the list, and see a preview of the
 data and a statistical profile of it. It never changes your files.
 
@@ -22,9 +22,9 @@ From this folder:
 
 ```powershell
 uv sync                  # install the libraries
-uv run qxc               # scan the current folder
-uv run qxc C:\some\folder          # scan a different folder
-uv run qxc . -r 2        # also scan 2 levels of subfolders
+uv run qtdv               # scan the current folder
+uv run qtdv C:\some\folder          # scan a different folder
+uv run qtdv . -r 2        # also scan 2 levels of subfolders
 ```
 
 ### How `-r` works
@@ -34,9 +34,9 @@ default is `0`, which means only the files directly in the folder.
 
 | Command | Scans |
 |---------|-------|
-| `qxc` or `qxc . -r 0` | the folder only |
-| `qxc . -r 1` | the folder and its subfolders |
-| `qxc . -r 3` | the folder and 3 levels of subfolders |
+| `qtdv` or `qtdv . -r 0` | the folder only |
+| `qtdv . -r 1` | the folder and its subfolders |
+| `qtdv . -r 3` | the folder and 3 levels of subfolders |
 
 The file that is open shows a `●` in the first column and a light green row.
 The cursor row keeps its normal highlight, so you can tell the two apart.
@@ -85,7 +85,7 @@ The date filter uses each file's **modified date**. Either box can be left
 empty, and both dates are included. A bad date turns the box red and is ignored.
 
 Searching and filtering use the list that is already loaded, so they are
-instant. Press `F5` to see files that were added or changed after `qxc` started.
+instant. Press `F5` to see files that were added or changed after `qtdv` started.
 
 ## Large files
 
@@ -112,7 +112,7 @@ statistics are correct.
 
 ## Project layout
 
-See [src/qxc/README.md](src/qxc/README.md) for what each module does,
+See [src/qtdv/README.md](src/qtdv/README.md) for what each module does,
 [tests/README.md](tests/README.md) for how to run the tests, and
 [docs/README.md](docs/README.md) for the design and plan.
 

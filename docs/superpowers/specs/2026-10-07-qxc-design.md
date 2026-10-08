@@ -1,5 +1,7 @@
 # qxc (Quick Excel/CSV) - Design Spec
 
+> **Note (2026-10-08):** This project was called `qxc` (Quick Excel/CSV) when this document was written. It is now `qtdv` (Quick Tabular Data Viewer). The text below is kept as written, as a record of what was built.
+
 **Author:** Jose Urena
 **Created:** 2026-10-07 01:20 PM -04:00
 **Status:** Draft - waiting for Jose's review

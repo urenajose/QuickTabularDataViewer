@@ -1,8 +1,8 @@
 import pandas as pd
 from rich.console import Console
 
-from qxc.profiler import build_preview, profile
-from qxc.ui.render import render_preview, render_profile
+from qtdv.profiler import build_preview, profile
+from qtdv.ui.render import render_preview, render_profile
 
 
 def text_of(renderable, width=140):
@@ -58,7 +58,7 @@ def test_profile_of_empty_table_renders():  # Review Focus 4
 
 
 def test_numbers_are_never_in_scientific_notation():  # review #2
-    from qxc.ui.render import _cell
+    from qtdv.ui.render import _cell
 
     assert _cell(1500000.0).plain == "1500000"
     assert _cell(123456789012.0).plain == "123456789012"

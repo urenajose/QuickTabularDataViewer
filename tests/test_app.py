@@ -3,9 +3,9 @@ import asyncio
 import pandas as pd
 from textual.widgets import DataTable, Input
 
-from qxc.ui import app as app_module
-from qxc.ui.app import QxcApp
-from qxc.ui.screens import ColumnPicker, ConfirmLargeFile
+from qtdv.ui import app as app_module
+from qtdv.ui.app import QxcApp
+from qtdv.ui.screens import ColumnPicker, ConfirmLargeFile
 
 
 def run(scenario):

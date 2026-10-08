@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from qxc.loader import LARGE_FILE_BYTES, LoaderError, is_large, list_sheets, load_table
+from qtdv.loader import LARGE_FILE_BYTES, LoaderError, is_large, list_sheets, load_table
 
 
 def write(path, text, encoding="utf-8"):

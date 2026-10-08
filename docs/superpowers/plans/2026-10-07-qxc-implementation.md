@@ -1,5 +1,7 @@
 # qxc Implementation Plan
 
+> **Note (2026-10-08):** This project was called `qxc` (Quick Excel/CSV) when this document was written. It is now `qtdv` (Quick Tabular Data Viewer). The text below is kept as written, as a record of what was built.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Created:** 2026-10-07 01:35 PM -04:00
