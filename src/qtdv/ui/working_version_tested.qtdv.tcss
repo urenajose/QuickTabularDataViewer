@@ -5,7 +5,6 @@
 Input.invalid { border: tall red; }
 
 #main { height: 1fr; }
-#files, #sheets { border: round $primary; }
 #files { width: 2fr; }
 #sheets { width: 30; }
 #right { width: 3fr; }

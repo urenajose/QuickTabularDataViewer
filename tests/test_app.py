@@ -472,20 +472,26 @@ def test_declining_the_large_file_prompt_does_not_move_the_mark(tmp_path, monkey
     run(scenario)
 
 
-def test_panel_titles_name_the_opened_file(tmp_path):
+def test_every_panel_has_a_border_and_a_fixed_title(tmp_path):
     folder = make_folder(tmp_path)
+    titles = {"#files": "Files", "#sheets": "Sheets / Tables", "#preview-box": "Preview", "#profile-box": "Profile"}
 
     async def scenario():
         app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
-            assert app.query_one("#preview-box").border_title == "Preview"
-            assert app.query_one("#profile-box").border_title == "Profile"
+
+            def check():
+                for selector, title in titles.items():
+                    widget = app.query_one(selector)
+                    assert widget.border_title == title, selector  # no file name in any title
+                    assert widget.styles.border.top[0] != "", selector  # and a border is drawn
+
+            check()
             app.query_one("#files", DataTable).focus()
             await pilot.press("enter")
             await settle(app, pilot)
-            assert app.query_one("#preview-box").border_title == "Preview · alpha.csv"
-            assert app.query_one("#profile-box").border_title == "Profile · alpha.csv"
+            check()
 
     run(scenario)
 

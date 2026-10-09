@@ -4,7 +4,7 @@ import pandas as pd
 from textual.widgets import DataTable, Input
 
 from qtdv.ui import app as app_module
-from qtdv.ui.app import QxcApp
+from qtdv.ui.app import QtdvApp
 from qtdv.ui.screens import ColumnPicker, ConfirmLargeFile
 
 
@@ -33,7 +33,7 @@ def test_lists_files_at_requested_depth(tmp_path):
 
     async def scenario():
         for depth, expected in ((0, 2), (1, 3)):
-            app = QxcApp(folder, depth=depth)
+            app = QtdvApp(folder, depth=depth)
             async with app.run_test(size=(160, 50)) as pilot:
                 await settle(app, pilot)
                 assert app.query_one("#files", DataTable).row_count == expected
@@ -45,7 +45,7 @@ def test_search_filters_the_list(tmp_path):
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#search", Input).value = "alp"
@@ -63,7 +63,7 @@ def test_type_key_cycles_filter(tmp_path):
     (folder / "book.ods").write_bytes(b"")
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -81,7 +81,7 @@ def test_bad_date_marks_the_box_and_is_ignored(tmp_path):
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             box = app.query_one("#date-from", Input)
@@ -100,7 +100,7 @@ def test_enter_opens_file_and_fills_preview_and_profile(tmp_path):
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -115,7 +115,7 @@ def test_enter_opens_file_and_fills_preview_and_profile(tmp_path):
 
 def test_empty_folder_shows_no_files(tmp_path):
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             assert app.query_one("#files", DataTable).row_count == 0
@@ -127,7 +127,7 @@ def test_corrupt_file_shows_error_not_crash(tmp_path):
     (tmp_path / "bad.xlsx").write_bytes(b"not a zip")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -143,7 +143,7 @@ def test_large_file_asks_before_loading(tmp_path, monkeypatch):
     monkeypatch.setattr(app_module, "is_large", lambda size: True)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -166,7 +166,7 @@ def test_stale_result_is_ignored(tmp_path):  # Review Focus 5
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             current = app.shown_files[0]
@@ -186,7 +186,7 @@ def test_column_picker_limits_preview_columns(tmp_path):
     (tmp_path / "wide.csv").write_text("a,b,c,d\n1,2,3,4\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -206,7 +206,7 @@ def test_column_picker_empty_result_resets_to_default(tmp_path):
     (tmp_path / "wide.csv").write_text("a,b\n1,2\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -226,7 +226,7 @@ def test_c_does_nothing_before_a_file_is_open(tmp_path):
     (tmp_path / "a.csv").write_text("a\n1\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -241,7 +241,7 @@ def test_column_picker_enter_applies_the_checked_columns(tmp_path):
     (tmp_path / "wide.csv").write_text("a,b,c,d\n1,2,3,4\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -262,7 +262,7 @@ def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
     (tmp_path / "a.csv").write_text("a\n1\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(90, 40)) as pilot:
             await settle(app, pilot)
             main = app.query_one("#main")
@@ -270,7 +270,7 @@ def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
             assert not main.has_class("show-profile")
             await pilot.press("p")
             assert main.has_class("show-profile")
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 40)) as pilot:
             await settle(app, pilot)
             assert not app.query_one("#main").has_class("narrow")
@@ -284,11 +284,11 @@ def test_file_names_with_brackets_show_literally(tmp_path):  # review #5
     (tmp_path / "Report [final].csv").write_text("a\n1\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             row = app.query_one("#files", DataTable).get_row(str(tmp_path / "Report [final].csv"))
-            assert isinstance(row[2], Text) and row[2].plain == "Report [final].csv"
+            assert isinstance(row[2], Text) and row[2].plain.strip() == "Report [final].csv"
 
     run(scenario)
 
@@ -297,7 +297,7 @@ def test_no_files_match_message_when_filters_hide_everything(tmp_path):  # revie
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#search", Input).value = "zzz"
@@ -311,7 +311,7 @@ def test_picker_survives_markup_like_column_names(tmp_path):  # review #1
     (tmp_path / "odd.csv").write_text("[/],[red]x[/red],b\n1,2,3\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -336,7 +336,7 @@ def test_switching_sheet_clears_old_table_state(tmp_path):  # review #4
     wb.save(path)
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -357,7 +357,7 @@ def test_picker_result_with_unknown_columns_is_ignored(tmp_path):  # review #4
     (tmp_path / "wide.csv").write_text("a,b\n1,2\n")
 
     async def scenario():
-        app = QxcApp(tmp_path, depth=0)
+        app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -381,7 +381,7 @@ def test_unexpected_error_while_profiling_is_shown_not_fatal(tmp_path, monkeypat
     monkeypatch.setattr(app_module, "profile", boom)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -403,14 +403,14 @@ def test_columns_that_fit_scales_with_width_up_to_five():  # review #7
 def marked_names(app):
     """Names of the rows that carry the opened-file dot."""
     table = app.query_one("#files", DataTable)
-    return [row[2].plain for row in (table.get_row(str(r.path)) for r in app.shown_files) if row[0].plain == "●"]
+    return [row[2].plain.strip() for row in (table.get_row(str(r.path)) for r in app.shown_files) if "●" in row[0].plain]
 
 
 def test_opened_file_gets_dot_and_green_tint_only_on_its_row(tmp_path):
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             assert marked_names(app) == []  # nothing opened yet
@@ -418,12 +418,14 @@ def test_opened_file_gets_dot_and_green_tint_only_on_its_row(tmp_path):
             await pilot.press("enter")
             await settle(app, pilot)
             assert marked_names(app) == ["alpha.csv"]
+            await pilot.press("down")  # the cursor wins over the tint, so look at the row from beside it
+            await pilot.pause()
             table = app.query_one("#files", DataTable)
             tinted = table.get_row(str(folder / "alpha.csv"))
             plain = table.get_row(str(folder / "beta.csv"))
             assert all("on #b7e4c7" in str(cell.style) for cell in tinted)
             assert not any("#b7e4c7" in str(cell.style) for cell in plain)
-            await pilot.press("down", "enter")  # open the second file
+            await pilot.press("enter")  # open the second file (the cursor is on it)
             await settle(app, pilot)
             assert marked_names(app) == ["beta.csv"]
 
@@ -434,7 +436,7 @@ def test_mark_survives_a_filter_and_returns_after_it_is_cleared(tmp_path):
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -454,7 +456,7 @@ def test_declining_the_large_file_prompt_does_not_move_the_mark(tmp_path, monkey
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             app.query_one("#files", DataTable).focus()
@@ -474,7 +476,7 @@ def test_panel_titles_name_the_opened_file(tmp_path):
     folder = make_folder(tmp_path)
 
     async def scenario():
-        app = QxcApp(folder, depth=0)
+        app = QtdvApp(folder, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
             await settle(app, pilot)
             assert app.query_one("#preview-box").border_title == "Preview"
@@ -484,5 +486,47 @@ def test_panel_titles_name_the_opened_file(tmp_path):
             await settle(app, pilot)
             assert app.query_one("#preview-box").border_title == "Preview · alpha.csv"
             assert app.query_one("#profile-box").border_title == "Profile · alpha.csv"
+
+    run(scenario)
+
+
+def row_backgrounds(table, y):
+    """Background colour of every segment on screen line ``y`` of the file table."""
+    return [seg.style.bgcolor.name if seg.style and seg.style.bgcolor else None for seg in table.render_line(y)]
+
+
+def test_opened_row_is_one_solid_tint_when_the_cursor_is_elsewhere(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            table.focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            await pilot.press("down")  # cursor leaves the opened file
+            await pilot.pause()
+            assert set(row_backgrounds(table, 1)[:-1]) == {"#b7e4c7"}  # no gaps between the cells (last piece is the table edge)
+
+    run(scenario)
+
+
+def test_cursor_on_the_opened_row_is_one_solid_cursor_colour(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            table.focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            colours = set(row_backgrounds(table, 1))  # the whole row, edge included
+            assert "#b7e4c7" not in colours  # the cursor wins over the tint
+            assert len(colours) == 1  # and the row is not a patchwork
+            assert marked_names(app) == ["alpha.csv"]  # the dot stays
 
     run(scenario)

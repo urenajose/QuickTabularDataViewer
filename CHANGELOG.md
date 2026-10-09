@@ -7,6 +7,8 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The Files and Sheets / Tables panels now have a border and a title, like
+  Preview and Profile. The Preview and Profile titles no longer show the file name.
 - The project is renamed from `qxc` (Quick Excel/CSV) to `qtdv` (Quick Tabular
   Data Viewer). The command is now `qtdv`, the Python package is `qtdv`, and the
   old `qxc` command is removed.

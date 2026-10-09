@@ -28,6 +28,7 @@ TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
     ("ods", frozenset({".ods"})),
 ]
 SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
+PANEL_TITLES = {"#files": "Files", "#sheets": "Sheets / Tables", "#preview-box": "Preview", "#profile-box": "Profile"}
 FILE_COLUMNS = ("", "Lvl", "Name", "Folder", "Modified", "Size")
 OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
@@ -103,8 +104,8 @@ class QtdvApp(App):
 
     def on_mount(self) -> None:
         table = self.query_one("#files", DataTable)
-        self.query_one("#preview-box").border_title = "Preview"
-        self.query_one("#profile-box").border_title = "Profile"
+        for selector, title in PANEL_TITLES.items():
+            self.query_one(selector).border_title = title
         self.query_one("#sheets", OptionList).display = False
         table.focus()
         self.rescan()
@@ -279,8 +280,6 @@ class QtdvApp(App):
         self._token += 1
         previous, self.current = self.current, record
         self._restyle_rows(previous, record)
-        self.query_one("#preview-box").border_title = f"Preview · {record.name}"
-        self.query_one("#profile-box").border_title = f"Profile · {record.name}"
         self.df = None
         self.profile_result = None
         self.selected_columns = None
