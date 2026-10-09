@@ -29,6 +29,7 @@ TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
     ("ods", frozenset({".ods"})),
 ]
 SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
+PANEL_ORDER = ("files", "profile-box", "sheets", "preview-box")  # the order g walks through the panels
 PANEL_TITLES = {"#files": "Files", "#sheets": "Sheets / Tables", "#preview-box": "Preview", "#profile-box": "Profile"}
 NAME_COLUMN = 2  # index of "Name" in FILE_COLUMNS
 NAME_WRAP_WIDTH = 24  # long file names wrap at this many characters
@@ -63,6 +64,8 @@ class QtdvApp(App):
         ("t", "cycle_type", "Type"),
         ("c", "pick_columns", "Columns"),
         ("p", "toggle_panel", "Preview/Files"),
+        ("g", "panel(1)", "Next panel"),
+        ("G", "panel(-1)", "Prev panel"),
         ("f5", "refresh", "Refresh"),
         ("escape", "focus_files", "Files"),
         ("q", "quit", "Quit"),
@@ -254,6 +257,30 @@ class QtdvApp(App):
         self.type_index = (self.type_index + 1) % len(TYPE_CHOICES)
         self.query_one("#type", Static).update(Text(f"Type: {TYPE_CHOICES[self.type_index][0]}"))
         self.apply_filters()
+
+    def action_panel(self, step: int) -> None:
+        """Move focus to the next (``1``) or previous (``-1``) panel. Hidden panels are skipped."""
+        panels = [w for w in (self.query_one(f"#{name}") for name in PANEL_ORDER) if w.display and w.region.width > 0]
+        if not panels:
+            return
+        focused = self.focused
+        if focused in panels:
+            target = panels[(panels.index(focused) + step) % len(panels)]
+        else:  # focus is somewhere else, such as the search box: enter the cycle at its start or end
+            target = panels[0] if step > 0 else panels[-1]
+        target.focus()
+
+    def _mark_focus(self) -> None:
+        """Put a ``▸`` in the title of the panel that has focus."""
+        for selector, title in PANEL_TITLES.items():
+            widget = self.query_one(selector)
+            widget.border_title = f"▸ {title}" if widget is self.focused else title
+
+    def on_descendant_focus(self, event) -> None:
+        self.call_after_refresh(self._mark_focus)
+
+    def on_descendant_blur(self, event) -> None:
+        self.call_after_refresh(self._mark_focus)
 
     def action_toggle_panel(self) -> None:
         self.query_one("#main").toggle_class("show-preview")

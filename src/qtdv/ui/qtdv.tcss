@@ -13,6 +13,7 @@ Input.invalid { border: tall red; }
 #preview-box { height: 2fr; width: 100%; }
 #files, #sheets, #preview-box, #profile-box { border: round $primary; }
 #preview, #profile { width: auto; }
+#files:focus, #sheets:focus, #preview-box:focus, #profile-box:focus { border: round $accent; }  /* the panel that has focus */
 
 #status { height: 1; padding: 0 1; color: $text-muted; }
 

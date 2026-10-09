@@ -489,7 +489,7 @@ def test_every_panel_has_a_border_and_a_fixed_title(tmp_path):
             def check():
                 for selector, title in titles.items():
                     widget = app.query_one(selector)
-                    assert widget.border_title == title, selector  # no file name in any title
+                    assert widget.border_title.removeprefix("▸ ") == title, selector  # no file name in any title (the focus marker is allowed)
                     assert widget.styles.border.top[0] != "", selector  # and a border is drawn
 
             check()
@@ -672,5 +672,82 @@ def test_preview_scrolls_sideways_when_many_columns_are_chosen(tmp_path):
             assert box.max_scroll_x > 0
             assert app.query_one("#preview").region.width > box.region.width  # not squeezed to fit
             assert "column_13" in [str(c) for c in app.df.columns]
+
+    run(scenario)
+
+
+async def open_first_file(app, pilot):
+    app.query_one("#files", DataTable).focus()
+    await pilot.press("enter")
+    await settle(app, pilot)
+
+
+def focused_id(app):
+    return app.focused.id if app.focused else None
+
+
+def test_g_jumps_through_the_panels_and_shift_g_goes_back(tmp_path, sample_xlsx):
+    async def scenario():
+        app = QtdvApp(sample_xlsx.parent, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)  # a workbook, so Sheets / Tables is visible
+            assert focused_id(app) == "files"
+            order = []
+            for _ in range(4):
+                await pilot.press("g")
+                order.append(focused_id(app))
+            assert order == ["profile-box", "sheets", "preview-box", "files"]  # and round to the start
+            await pilot.press("G")
+            assert focused_id(app) == "preview-box"  # Shift+G goes the other way
+
+    run(scenario)
+
+
+def test_g_skips_the_hidden_sheets_panel_for_csv_files(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            order = []
+            for _ in range(3):
+                await pilot.press("g")
+                order.append(focused_id(app))
+            assert order == ["profile-box", "preview-box", "files"]
+
+    run(scenario)
+
+
+def test_the_focused_panel_is_marked_in_its_title(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert app.query_one("#files").border_title == "▸ Files"
+            assert app.query_one("#preview-box").border_title == "Preview"
+            await pilot.press("g")
+            await pilot.pause()
+            assert app.query_one("#files").border_title == "Files"
+            assert app.query_one("#profile-box").border_title == "▸ Profile"
+
+    run(scenario)
+
+
+def test_g_in_the_search_box_types_a_letter(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await pilot.press("/")
+            await pilot.press("g")
+            assert app.query_one("#search", Input).value == "g"
 
     run(scenario)

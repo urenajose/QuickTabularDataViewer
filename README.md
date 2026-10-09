@@ -78,6 +78,7 @@ so on. The selected file's full path and level also show in the header.
 | `d` | Go to the date boxes (`From` and `To`, as `YYYY-MM-DD`) |
 | `c` | Choose which columns to show in the preview (Space = toggle, Enter = apply) |
 | `p` | On a narrow terminal (under 110 columns), switch between the Preview (full screen) and the Files / Profile / Sheets panels. Wide terminals show everything at once. |
+| `g` / `G` | Jump to the next / previous panel: Files, Profile, Sheets / Tables, Preview. The panel with focus shows a `▸` in its title. Sheets / Tables is skipped when it is hidden. |
 | `F5` | Scan the disk again to pick up new or changed files |
 | `Esc` | Go back to the file list |
 | `q` | Quit |
