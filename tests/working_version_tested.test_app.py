@@ -1223,3 +1223,28 @@ def test_status_line_says_all_levels_when_the_depth_is_unlimited(tmp_path):
             assert "depth all" in app.status_message
 
     run(scenario)
+
+
+def test_files_panel_tells_the_user_to_press_enter_to_preview(tmp_path):
+    make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            hint = app.query_one("#files").border_subtitle
+            assert "Enter" in hint and "preview" in hint.lower()
+
+    run(scenario)
+
+
+def test_footer_labels_p_as_preview_slash_file(tmp_path):
+    make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            assert app.active_bindings["p"].binding.description == "Preview / File"
+
+    run(scenario)

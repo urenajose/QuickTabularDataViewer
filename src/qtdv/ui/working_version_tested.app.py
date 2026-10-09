@@ -41,6 +41,7 @@ FILE_COLUMNS = ("", "Lvl", "Name", "Modified", "Size", "Folder")
 OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
 NARROW_BELOW_COLUMNS = 100  # a window with fewer columns hides the Profile (i shows it full screen)
 SHORT_BELOW_ROWS = 28  # a window with fewer rows hides the Preview (p shows it full screen)
+FILES_HINT = "Enter: preview file"  # shown in the bottom border of the Files panel
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
 
 
@@ -69,7 +70,7 @@ class QtdvApp(App):
         ("d", "focus_dates", "Dates"),
         ("t", "cycle_type", "Type"),
         ("c", "pick_columns", "Columns"),
-        ("p", "toggle_panel", "Preview/Files"),
+        ("p", "toggle_panel", "Preview / File"),
         ("i", "toggle_profile", "Profile"),
         ("g", "panel(1)", "Next panel"),
         Binding("G", "panel(-1)", "Prev panel", show=False),  # not listed in the footer to keep it short
@@ -125,6 +126,7 @@ class QtdvApp(App):
         table = self.query_one("#files", DataTable)
         for selector, title in PANEL_TITLES.items():
             self.query_one(selector).border_title = title
+        table.border_subtitle = FILES_HINT
         self._set_sheets_visible(False)
         self.sub_title = str(self.folder)  # the open file's path replaces it while a file is open
         table.focus()

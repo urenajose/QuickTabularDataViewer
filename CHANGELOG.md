@@ -12,6 +12,8 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The Files panel shows `Enter: preview file` in its bottom border, and the footer calls the `p` key
+  `Preview / File` (it previews one file).
 - The header title is left-aligned and the location follows it on the same line: the folder
   being browsed, or the path of the open (active) file once one is opened. It no longer
   depends on the cursor row.
