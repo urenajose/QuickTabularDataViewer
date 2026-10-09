@@ -12,6 +12,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The Preview now hides when the window is short (under 28 rows), not when it is narrow, because
+  it lies along the bottom. `p` shows it full screen, and picking a file jumps to it, in a
+  short window only. A narrow but tall window keeps the Preview.
 - `o` now opens the active file (the one marked `●`) instead of the file under the
   cursor. With no file open it still opens the file under the cursor. The Preview's top
   line shows the hint `o: open in default program` next to the row and column count.

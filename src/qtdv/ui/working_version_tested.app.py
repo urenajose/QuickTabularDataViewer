@@ -39,6 +39,7 @@ NAME_COLUMN = 2  # index of "Name" in FILE_COLUMNS
 NAME_WRAP_WIDTH = 24  # long file names wrap at this many characters
 FILE_COLUMNS = ("", "Lvl", "Name", "Modified", "Size", "Folder")
 OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
+SHORT_BELOW_ROWS = 28  # a window with fewer rows hides the Preview (p shows it full screen)
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
 
 
@@ -336,7 +337,10 @@ class QtdvApp(App):
         self.call_after_refresh(self._mark_focus)
 
     def action_toggle_panel(self) -> None:
-        self.query_one("#main").toggle_class("show-preview")
+        """In a short window, swap the Preview (full screen) with the other panels."""
+        main = self.query_one("#main")
+        if main.has_class("short"):
+            main.toggle_class("show-preview")
 
     def action_open_external(self) -> None:
         """Open the active file (the one marked ``●``), or the one under the cursor when none is open,
@@ -403,13 +407,13 @@ class QtdvApp(App):
         self.query_one("#sheets", OptionList).display = False
         self._show_preview(Text("Loading…", style="dim"))
         self.query_one("#profile", Static).update("")
-        self._jump_to_preview_when_narrow()
+        self._jump_to_preview_when_short()
         self._load_sheets(self._token, record)
 
-    def _jump_to_preview_when_narrow(self) -> None:
-        """On a narrow terminal only one panel fits, so show the Preview once a file is picked."""
+    def _jump_to_preview_when_short(self) -> None:
+        """In a short window the Preview is hidden, so show it once a file is picked."""
         main = self.query_one("#main")
-        if main.has_class("narrow"):
+        if main.has_class("short"):
             main.add_class("show-preview")
             self.call_after_refresh(self.query_one("#preview-box").focus)  # it is hidden until the layout refreshes
 
@@ -527,5 +531,8 @@ class QtdvApp(App):
             self._set_status(message)
 
     def on_resize(self) -> None:
-        self.query_one("#main").set_class(self.size.width < 110, "narrow")
+        main = self.query_one("#main")
+        main.set_class(self.size.height < SHORT_BELOW_ROWS, "short")
+        if not main.has_class("short"):
+            main.remove_class("show-preview")  # the Preview is back on screen by itself
         self._render_views()

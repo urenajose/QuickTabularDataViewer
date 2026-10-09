@@ -261,15 +261,15 @@ def test_column_picker_enter_applies_the_checked_columns(tmp_path):
     run(scenario)
 
 
-def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
+def test_short_terminal_hides_the_preview_and_p_toggles(tmp_path):
     (tmp_path / "a.csv").write_text("a\n1\n")
 
     async def scenario():
         app = QtdvApp(tmp_path, depth=0)
-        async with app.run_test(size=(90, 40)) as pilot:
+        async with app.run_test(size=(160, 24)) as pilot:
             await settle(app, pilot)
             main = app.query_one("#main")
-            assert main.has_class("narrow")
+            assert main.has_class("short")
             assert not main.has_class("show-preview")
             assert app.query_one("#top").display and not app.query_one("#preview-box").region.width
             await pilot.press("p")  # p switches to the Preview
@@ -281,7 +281,21 @@ def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
         app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 40)) as pilot:
             await settle(app, pilot)
-            assert not app.query_one("#main").has_class("narrow")
+            assert not app.query_one("#main").has_class("short")
+
+    run(scenario)
+
+
+def test_a_narrow_but_tall_window_keeps_the_preview(tmp_path):  # the Preview follows the height, not the width
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(90, 40)) as pilot:
+            await settle(app, pilot)
+            assert not app.query_one("#main").has_class("short")
+            preview = app.query_one("#preview-box")
+            assert preview.region.width > 60 and preview.region.height > 5
 
     run(scenario)
 
@@ -842,12 +856,12 @@ def test_malformed_csv_row_is_cut_and_the_user_is_told(tmp_path):
     run(scenario)
 
 
-def test_narrow_terminal_jumps_to_the_preview_when_a_file_is_picked(tmp_path):
+def test_short_terminal_jumps_to_the_preview_when_a_file_is_picked(tmp_path):
     (tmp_path / "a.csv").write_text("a\n1\n")
 
     async def scenario():
         app = QtdvApp(tmp_path, depth=0)
-        async with app.run_test(size=(90, 40)) as pilot:
+        async with app.run_test(size=(160, 24)) as pilot:
             await settle(app, pilot)
             main = app.query_one("#main")
             assert not main.has_class("show-preview")
@@ -855,7 +869,7 @@ def test_narrow_terminal_jumps_to_the_preview_when_a_file_is_picked(tmp_path):
             assert main.has_class("show-preview")  # the Preview is on screen, not the file list
             assert focused_id(app) == "preview-box"
         app = QtdvApp(tmp_path, depth=0)
-        async with app.run_test(size=(160, 40)) as pilot:  # wide: all panels are already visible
+        async with app.run_test(size=(160, 40)) as pilot:  # tall: all panels are already visible
             await settle(app, pilot)
             await open_first_file(app, pilot)
             assert not app.query_one("#main").has_class("show-preview")
@@ -910,12 +924,12 @@ def test_escape_from_the_search_box_goes_to_the_file_list_first(tmp_path):
     run(scenario)
 
 
-def test_escape_on_a_narrow_terminal_leaves_the_preview_then_closes_the_file(tmp_path):
+def test_escape_on_a_short_terminal_leaves_the_preview_then_closes_the_file(tmp_path):
     (tmp_path / "a.csv").write_text("a\n1\n")
 
     async def scenario():
         app = QtdvApp(tmp_path, depth=0)
-        async with app.run_test(size=(90, 40)) as pilot:
+        async with app.run_test(size=(160, 24)) as pilot:
             await settle(app, pilot)
             main = app.query_one("#main")
             await open_first_file(app, pilot)

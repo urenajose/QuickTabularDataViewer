@@ -7,7 +7,7 @@
 | `app.py` | The Textual app: lays out the screen, handles keys, and starts background loading. |
 | `render.py` | Turns preview and profile results into Rich tables. It has no Textual code, so it is easy to test. |
 | `screens.py` | The two pop-ups: the large-file question (`y`/`n`) and the column picker. |
-| `qtdv.tcss` | Colors, sizes and the three-panel layout (Files beside Profile over Sheets, Preview across the bottom) and the narrow-terminal rules. |
+| `qtdv.tcss` | Colors, sizes and the three-panel layout (Files beside Profile over Sheets, Preview across the bottom) and the short-window rules (the Preview hides when there are few rows). |
 
 ## Why drawing is separate from the app
 
