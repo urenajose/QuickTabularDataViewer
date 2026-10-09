@@ -59,7 +59,7 @@ so on. The selected file's full path and level also show in the header.
 +-------------------+------------+----------------------------+
 ```
 
-- **Files** - every table file found, with level, folder, modified date and size.
+- **Files** - every table file found, with level, name, modified date, size and folder (last).
   Names longer than 24 characters wrap onto a second line.
 - **Sheets/Tables** - only shown for Excel and LibreOffice files. Named Excel
   Tables show under their sheet (`.xlsx` only). Sheet sizes show the used range.

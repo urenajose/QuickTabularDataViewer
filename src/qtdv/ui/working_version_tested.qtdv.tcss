@@ -5,10 +5,14 @@
 Input.invalid { border: tall red; }
 
 #main { height: 1fr; }
-#files { width: 2fr; }
-#sheets { width: 30; }
-#right { width: 3fr; }
-#preview-box, #profile-box { height: 1fr; border: round $primary; }
+#left { width: 11fr; }
+#files, #sheets { border: round $primary; }
+#files { height: 3fr; }
+#lower { height: 2fr; }
+#sheets { width: 30; height: 100%; }
+#profile-box { width: 1fr; height: 100%; }
+#preview-box { width: 9fr; height: 100%; }
+#preview-box, #profile-box { border: round $primary; }
 
 #status { height: 1; padding: 0 1; color: $text-muted; }
 
@@ -18,6 +22,8 @@ ConfirmLargeFile { align: center middle; }
 ColumnPicker { align: center middle; }
 #picker { width: 60; height: 70%; padding: 1 2; border: thick $primary; background: $surface; }
 
-#main.narrow #profile-box { display: none; }
-#main.narrow.show-profile #profile-box { display: block; }
-#main.narrow.show-profile #preview-box { display: none; }
+/* Narrow terminal: Files, Sheets and Profile fill the screen; p swaps them for the Preview. */
+#main.narrow #left { width: 1fr; }
+#main.narrow #preview-box { display: none; }
+#main.narrow.show-preview #preview-box { display: block; width: 1fr; }
+#main.narrow.show-preview #left { display: none; }

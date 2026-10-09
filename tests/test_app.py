@@ -602,3 +602,19 @@ def test_wrapped_row_tint_has_no_gaps_on_any_line(tmp_path):
                 assert set(row_backgrounds(table, y)[:-1]) == {"#b7e4c7"}, y
 
     run(scenario)
+
+
+def test_file_columns_end_with_folder(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=1)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            labels = [str(column.label).strip() for column in table.ordered_columns]
+            assert labels == ["", "Lvl", "Name", "Modified", "Size", "Folder"]
+            row = table.get_row(str(folder / "deeper" / "gamma.csv"))
+            assert row[-1].plain.strip() == "deeper"  # the last cell is the folder
+
+    run(scenario)

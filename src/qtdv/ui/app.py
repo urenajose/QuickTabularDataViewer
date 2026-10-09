@@ -31,7 +31,7 @@ SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
 PANEL_TITLES = {"#files": "Files", "#sheets": "Sheets / Tables", "#preview-box": "Preview", "#profile-box": "Profile"}
 NAME_COLUMN = 2  # index of "Name" in FILE_COLUMNS
 NAME_WRAP_WIDTH = 24  # long file names wrap at this many characters
-FILE_COLUMNS = ("", "Lvl", "Name", "Folder", "Modified", "Size")
+FILE_COLUMNS = ("", "Lvl", "Name", "Modified", "Size", "Folder")
 OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
 
@@ -162,9 +162,9 @@ class QtdvApp(App):
             "●" if opened else "",
             str(rec.level),
             rec.name,
-            rec.rel_dir or ".",
             f"{rec.modified:%Y-%m-%d %H:%M}",
             human_size(rec.size),
+            rec.rel_dir or ".",
         ]
 
     def _fill_table(self, table: DataTable) -> None:
