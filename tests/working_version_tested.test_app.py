@@ -268,13 +268,13 @@ def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
             main = app.query_one("#main")
             assert main.has_class("narrow")
             assert not main.has_class("show-preview")
-            assert app.query_one("#left").display and not app.query_one("#preview-box").region.width
+            assert app.query_one("#top").display and not app.query_one("#preview-box").region.width
             await pilot.press("p")  # p switches to the Preview
             assert main.has_class("show-preview")
-            assert app.query_one("#preview-box").region.width > 60 and not app.query_one("#left").region.width
+            assert app.query_one("#preview-box").region.width > 60 and not app.query_one("#top").region.width
             await pilot.press("p")  # and back
             assert not main.has_class("show-preview")
-            assert app.query_one("#left").region.width > 60
+            assert app.query_one("#top").region.width > 60
         app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 40)) as pilot:
             await settle(app, pilot)
@@ -543,7 +543,7 @@ def test_cursor_on_the_opened_row_is_one_solid_cursor_colour(tmp_path):
     run(scenario)
 
 
-def test_wide_layout_has_files_over_sheets_and_profile_with_preview_on_the_right(tmp_path, sample_xlsx):
+def test_wide_layout_has_files_beside_profile_over_sheets_with_preview_across_the_bottom(tmp_path, sample_xlsx):
     async def scenario():
         app = QtdvApp(sample_xlsx.parent, depth=0)
         async with app.run_test(size=(160, 50)) as pilot:
@@ -554,10 +554,28 @@ def test_wide_layout_has_files_over_sheets_and_profile_with_preview_on_the_right
             files, sheets, profile, preview = (
                 app.query_one(sel).region for sel in ("#files", "#sheets", "#profile-box", "#preview-box")
             )
-            assert files.bottom <= sheets.y and files.bottom <= profile.y  # Files on top, the others below it
-            assert sheets.right <= profile.x  # Sheets / Tables left of Profile
-            assert preview.x >= max(files.right, profile.right)  # Preview in its own column on the right
-            assert preview.height >= files.height + sheets.height  # and as tall as the left column
+            assert files.right <= profile.x and files.right <= sheets.x  # Files on the left, the others to its right
+            assert profile.bottom <= sheets.y  # Profile stacked above Sheets / Tables
+            assert preview.y >= max(files.bottom, profile.bottom, sheets.bottom)  # Preview below all of them
+            assert preview.width >= files.width + profile.width  # and as wide as the screen
+
+    run(scenario)
+
+
+def test_files_panel_scrolls_both_ways_when_it_needs_to(tmp_path):
+    for n in range(60):
+        (tmp_path / f"file_{n:02d}.csv").write_text("x\n1\n")
+    deep = tmp_path / ("d" * 90)
+    deep.mkdir()
+    (deep / "inside.csv").write_text("x\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=1)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            assert table.show_vertical_scrollbar  # more files than rows
+            assert table.show_horizontal_scrollbar  # the 90-character folder name is wider than the panel
 
     run(scenario)
 
@@ -600,5 +618,21 @@ def test_wrapped_row_tint_has_no_gaps_on_any_line(tmp_path):
             await pilot.pause()
             for y in (1, 2):  # both lines of the wrapped row
                 assert set(row_backgrounds(table, y)[:-1]) == {"#b7e4c7"}, y
+
+    run(scenario)
+
+
+def test_file_columns_end_with_folder(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=1)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            labels = [str(column.label).strip() for column in table.ordered_columns]
+            assert labels == ["", "Lvl", "Name", "Modified", "Size", "Folder"]
+            row = table.get_row(str(folder / "deeper" / "gamma.csv"))
+            assert row[-1].plain.strip() == "deeper"  # the last cell is the folder
 
     run(scenario)

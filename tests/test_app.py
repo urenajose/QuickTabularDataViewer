@@ -636,3 +636,18 @@ def test_file_columns_end_with_folder(tmp_path):
             assert row[-1].plain.strip() == "deeper"  # the last cell is the folder
 
     run(scenario)
+
+
+def test_file_rows_alternate_in_shade(tmp_path):
+    for name in ("a.csv", "b.csv", "c.csv"):
+        (tmp_path / name).write_text("x\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            # the cursor is on row 0, so rows 1 and 2 (screen lines 2 and 3) show their own shades
+            assert set(row_backgrounds(table, 2)[:-1]) != set(row_backgrounds(table, 3)[:-1])
+
+    run(scenario)

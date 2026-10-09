@@ -95,7 +95,7 @@ class QtdvApp(App):
             yield Input(placeholder="To YYYY-MM-DD", id="date-to")
         with Vertical(id="main"):
             with Horizontal(id="top"):
-                yield DataTable(id="files", cursor_type="row", cell_padding=0)  # padding lives inside the cells so the tint has no gaps
+                yield DataTable(id="files", cursor_type="row", cell_padding=0, zebra_stripes=True)  # padding lives inside the cells so the tint has no gaps
                 with Vertical(id="side"):
                     with ScrollableContainer(id="profile-box"):
                         yield Static("", id="profile")

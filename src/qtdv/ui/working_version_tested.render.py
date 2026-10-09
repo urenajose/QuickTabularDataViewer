@@ -64,7 +64,7 @@ def render_preview(preview: Preview) -> Group:
 
 
 def render_profile(profile: Profile) -> Group:
-    """Summary line, a per-column table, and the ``describe()`` table."""
+    """Summary line and a per-column table (type, nulls, unique)."""
     summary = Text(f"{profile.rows:,} rows · {profile.cols:,} columns", style="bold")
 
     columns = Table(title="Columns", header_style="bold cyan")
@@ -73,14 +73,4 @@ def render_profile(profile: Profile) -> Group:
     for name, row in profile.columns.iterrows():
         columns.add_row(Text(str(name)), Text(row["dtype"]), Text(f"{row['nulls']:,}"), Text(f"{row['unique']:,}"))
 
-    parts: list = [summary, columns]
-    stats = profile.describe.T.dropna(axis=1, how="all")
-    if not stats.empty:
-        described = Table(title="describe()", header_style="bold cyan")
-        described.add_column(Text("Column"), no_wrap=True, overflow="ellipsis", max_width=24)
-        for stat in stats.columns:
-            described.add_column(Text(str(stat)), justify="right", no_wrap=True)
-        for name, row in stats.iterrows():
-            described.add_row(Text(str(name)), *[_cell(value) for value in row])
-        parts.append(described)
-    return Group(*parts)
+    return Group(summary, columns)
