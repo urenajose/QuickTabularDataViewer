@@ -355,7 +355,15 @@ class QtdvApp(App):
         self.query_one("#sheets", OptionList).display = False
         self._show_preview(Text("Loading…", style="dim"))
         self.query_one("#profile", Static).update("")
+        self._jump_to_preview_when_narrow()
         self._load_sheets(self._token, record)
+
+    def _jump_to_preview_when_narrow(self) -> None:
+        """On a narrow terminal only one panel fits, so show the Preview once a file is picked."""
+        main = self.query_one("#main")
+        if main.has_class("narrow"):
+            main.add_class("show-preview")
+            self.call_after_refresh(self.query_one("#preview-box").focus)  # it is hidden until the layout refreshes
 
     @work(thread=True, exclusive=True, group="load")
     def _load_sheets(self, token: int, record: FileRecord) -> None:

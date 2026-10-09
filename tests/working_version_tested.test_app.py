@@ -489,7 +489,7 @@ def test_every_panel_has_a_border_and_a_fixed_title(tmp_path):
             def check():
                 for selector, title in titles.items():
                     widget = app.query_one(selector)
-                    assert widget.border_title == title, selector  # no file name in any title
+                    assert widget.border_title.removeprefix("▸ ") == title, selector  # no file name in any title (the focus marker is allowed)
                     assert widget.styles.border.top[0] != "", selector  # and a border is drawn
 
             check()
@@ -634,5 +634,206 @@ def test_file_columns_end_with_folder(tmp_path):
             assert labels == ["", "Lvl", "Name", "Modified", "Size", "Folder"]
             row = table.get_row(str(folder / "deeper" / "gamma.csv"))
             assert row[-1].plain.strip() == "deeper"  # the last cell is the folder
+
+    run(scenario)
+
+
+def test_file_rows_alternate_in_shade(tmp_path):
+    for name in ("a.csv", "b.csv", "c.csv"):
+        (tmp_path / name).write_text("x\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            # the cursor is on row 0, so rows 1 and 2 (screen lines 2 and 3) show their own shades
+            assert set(row_backgrounds(table, 2)[:-1]) != set(row_backgrounds(table, 3)[:-1])
+
+    run(scenario)
+
+
+def test_preview_scrolls_sideways_when_many_columns_are_chosen(tmp_path):
+    names = [f"column_{n:02d}" for n in range(14)]
+    (tmp_path / "wide.csv").write_text(",".join(names) + "\n" + ",".join(["some value"] * 14) + "\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            app.selected_columns = names  # as if all 14 were ticked in the column picker
+            app._render_views()
+            await pilot.pause()
+            box = app.query_one("#preview-box")
+            assert box.show_horizontal_scrollbar
+            assert box.max_scroll_x > 0
+            assert app.query_one("#preview").region.width > box.region.width  # not squeezed to fit
+            assert "column_13" in [str(c) for c in app.df.columns]
+
+    run(scenario)
+
+
+async def open_first_file(app, pilot):
+    app.query_one("#files", DataTable).focus()
+    await pilot.press("enter")
+    await settle(app, pilot)
+
+
+def focused_id(app):
+    return app.focused.id if app.focused else None
+
+
+def test_g_jumps_through_the_panels_and_shift_g_goes_back(tmp_path, sample_xlsx):
+    async def scenario():
+        app = QtdvApp(sample_xlsx.parent, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)  # a workbook, so Sheets / Tables is visible
+            assert focused_id(app) == "files"
+            order = []
+            for _ in range(4):
+                await pilot.press("g")
+                order.append(focused_id(app))
+            assert order == ["profile-box", "sheets", "preview-box", "files"]  # and round to the start
+            await pilot.press("G")
+            assert focused_id(app) == "preview-box"  # Shift+G goes the other way
+
+    run(scenario)
+
+
+def test_g_skips_the_hidden_sheets_panel_for_csv_files(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            order = []
+            for _ in range(3):
+                await pilot.press("g")
+                order.append(focused_id(app))
+            assert order == ["profile-box", "preview-box", "files"]
+
+    run(scenario)
+
+
+def test_the_focused_panel_is_marked_in_its_title(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert app.query_one("#files").border_title == "▸ Files"
+            assert app.query_one("#preview-box").border_title == "Preview"
+            await pilot.press("g")
+            await pilot.pause()
+            assert app.query_one("#files").border_title == "Files"
+            assert app.query_one("#profile-box").border_title == "▸ Profile"
+
+    run(scenario)
+
+
+def test_g_in_the_search_box_types_a_letter(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await pilot.press("/")
+            await pilot.press("g")
+            assert app.query_one("#search", Input).value == "g"
+
+    run(scenario)
+
+
+def test_j_and_k_move_the_file_cursor(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            table.focus()
+            assert table.cursor_row == 0
+            await pilot.press("j")
+            assert table.cursor_row == 1
+            await pilot.press("k")
+            assert table.cursor_row == 0
+
+    run(scenario)
+
+
+def test_hjkl_scroll_the_preview(tmp_path):
+    names = [f"column_{n:02d}" for n in range(14)]
+    rows = "\n".join(",".join(["some value"] * 14) for _ in range(40))
+    (tmp_path / "big.csv").write_text(",".join(names) + "\n" + rows + "\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            app.selected_columns = names
+            app._render_views()
+            await pilot.pause()
+            box = app.query_one("#preview-box")
+            box.focus()
+            await pilot.pause()
+            assert box.max_scroll_y > 0 and box.max_scroll_x > 0
+            await pilot.press("j", "j", "j")
+            await pilot.pause()
+            assert box.scroll_y > 0
+            await pilot.press("k", "k", "k", "k")
+            await pilot.pause()
+            assert box.scroll_y == 0
+            await pilot.press("l", "l", "l")
+            await pilot.pause()
+            assert box.scroll_x > 0
+            await pilot.press("h", "h", "h", "h")
+            await pilot.pause()
+            assert box.scroll_x == 0
+
+    run(scenario)
+
+
+def test_panel_keys_do_not_crash_while_a_pop_up_is_open(tmp_path, monkeypatch):
+    folder = make_folder(tmp_path)
+    monkeypatch.setattr(app_module, "is_large", lambda size: True)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await pilot.pause()
+            assert isinstance(app.screen, ConfirmLargeFile)
+            await pilot.press("g", "G", "j", "k", "h", "l")
+            await pilot.pause()
+            assert isinstance(app.screen, ConfirmLargeFile)  # still open, nothing crashed
+
+    run(scenario)
+
+
+def test_malformed_csv_row_is_cut_and_the_user_is_told(tmp_path):
+    (tmp_path / "late.csv").write_text("a,b\n1,2\n3,4,5\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert app.df.shape == (2, 2)  # it loads instead of failing
+            assert "extra fields" in app.status_message and "line 3" in app.status_message
+            shown = app.query_one("#preview").content  # what the Preview panel is showing
+            assert "extra fields" in "".join(seg.text for seg in app.console.render(shown))
 
     run(scenario)

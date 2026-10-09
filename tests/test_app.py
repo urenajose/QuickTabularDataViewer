@@ -837,3 +837,25 @@ def test_malformed_csv_row_is_cut_and_the_user_is_told(tmp_path):
             assert "extra fields" in "".join(seg.text for seg in app.console.render(shown))
 
     run(scenario)
+
+
+def test_narrow_terminal_jumps_to_the_preview_when_a_file_is_picked(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(90, 40)) as pilot:
+            await settle(app, pilot)
+            main = app.query_one("#main")
+            assert not main.has_class("show-preview")
+            await open_first_file(app, pilot)
+            assert main.has_class("show-preview")  # the Preview is on screen, not the file list
+            assert focused_id(app) == "preview-box"
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 40)) as pilot:  # wide: all panels are already visible
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert not app.query_one("#main").has_class("show-preview")
+            assert focused_id(app) == "files"
+
+    run(scenario)
