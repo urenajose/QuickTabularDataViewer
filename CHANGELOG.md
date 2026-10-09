@@ -12,6 +12,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- `Esc` now steps back one layer at a time: it leaves the narrow-screen Preview, then
+  returns to the file list, then closes the open file (Preview, Profile, Sheets and
+  the `●` mark are cleared). A pop-up still closes on `Esc`.
 - The Preview keeps its natural width and scrolls sideways when the table is wider
   than the panel (for example when many columns are chosen in the picker).
 - Long column names in the Profile are cut at 12 characters with `…`.

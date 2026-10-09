@@ -73,7 +73,7 @@ class QtdvApp(App):
         Binding("h", "move('left')", "Left", show=False),  # not listed in the footer to keep it short
         Binding("l", "move('right')", "Right", show=False),  # not listed in the footer to keep it short
         ("f5", "refresh", "Refresh"),
-        ("escape", "focus_files", "Files"),
+        ("escape", "back", "Back"),
         ("q", "quit", "Quit"),
     ]
 
@@ -161,6 +161,9 @@ class QtdvApp(App):
         )
         table = self.query_one("#files", DataTable)
         self._fill_table(table)
+        self._set_files_status()
+
+    def _set_files_status(self) -> None:
         if self.shown_files:
             self._set_status(f"{len(self.shown_files)} of {len(self.records)} files · depth {self.depth}")
         else:
@@ -256,8 +259,36 @@ class QtdvApp(App):
     def action_focus_dates(self) -> None:
         self.query_one("#date-from", Input).focus()
 
-    def action_focus_files(self) -> None:
-        self.query_one("#files", DataTable).focus()
+    def action_back(self) -> None:
+        """Escape steps back one layer: leave the narrow Preview, then return to the file list, then close the file."""
+        if len(self.screen_stack) > 1:
+            return  # a pop-up is open and handles its own Escape
+        main = self.query_one("#main")
+        files = self.query_one("#files", DataTable)
+        if main.has_class("show-preview"):
+            main.remove_class("show-preview")
+            files.focus()
+        elif self.focused is not files:
+            files.focus()
+        else:
+            self._close_file()
+
+    def _close_file(self) -> None:
+        """Forget the open file: clear the panels and the mark, and ignore any load still running."""
+        if self.current is None:
+            return
+        self._token += 1  # a result that arrives late belongs to the closed file
+        previous, self.current = self.current, None
+        self._restyle_rows(previous)
+        self.df = None
+        self.profile_result = None
+        self.selected_columns = None
+        self.sheets = []
+        self.sub_title = ""
+        self.query_one("#sheets", OptionList).display = False
+        self.query_one("#profile", Static).update("")
+        self._show_preview(Text("Select a file and press Enter"))
+        self._set_files_status()
 
     def action_cycle_type(self) -> None:
         self.type_index = (self.type_index + 1) % len(TYPE_CHOICES)
