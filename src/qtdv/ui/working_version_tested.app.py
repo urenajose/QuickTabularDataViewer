@@ -39,6 +39,7 @@ NAME_COLUMN = 2  # index of "Name" in FILE_COLUMNS
 NAME_WRAP_WIDTH = 24  # long file names wrap at this many characters
 FILE_COLUMNS = ("", "Lvl", "Name", "Modified", "Size", "Folder")
 OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
+NARROW_BELOW_COLUMNS = 100  # a window with fewer columns hides the Profile (i shows it full screen)
 SHORT_BELOW_ROWS = 28  # a window with fewer rows hides the Preview (p shows it full screen)
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
 
@@ -69,6 +70,7 @@ class QtdvApp(App):
         ("t", "cycle_type", "Type"),
         ("c", "pick_columns", "Columns"),
         ("p", "toggle_panel", "Preview/Files"),
+        ("i", "toggle_profile", "Profile"),
         ("g", "panel(1)", "Next panel"),
         Binding("G", "panel(-1)", "Prev panel", show=False),  # not listed in the footer to keep it short
         Binding("j", "move('down')", "Down", show=False),  # not listed in the footer to keep it short
@@ -123,7 +125,7 @@ class QtdvApp(App):
         table = self.query_one("#files", DataTable)
         for selector, title in PANEL_TITLES.items():
             self.query_one(selector).border_title = title
-        self.query_one("#sheets", OptionList).display = False
+        self._set_sheets_visible(False)
         table.focus()
         self.rescan()
 
@@ -269,8 +271,9 @@ class QtdvApp(App):
             return  # a pop-up is open and handles its own Escape
         main = self.query_one("#main")
         files = self.query_one("#files", DataTable)
-        if main.has_class("show-preview"):
+        if main.has_class("show-preview") or main.has_class("show-profile"):
             main.remove_class("show-preview")
+            main.remove_class("show-profile")
             files.focus()
         elif self.focused is not files:
             files.focus()
@@ -289,7 +292,7 @@ class QtdvApp(App):
         self.selected_columns = None
         self.sheets = []
         self.sub_title = ""
-        self.query_one("#sheets", OptionList).display = False
+        self._set_sheets_visible(False)
         self.query_one("#profile", Static).update("")
         self._show_preview(Text("Select a file and press Enter"))
         self._set_files_status()
@@ -340,7 +343,17 @@ class QtdvApp(App):
         """In a short window, swap the Preview (full screen) with the other panels."""
         main = self.query_one("#main")
         if main.has_class("short"):
+            main.remove_class("show-profile")
             main.toggle_class("show-preview")
+
+    def action_toggle_profile(self) -> None:
+        """In a narrow window, swap the Profile (full screen) with the other panels."""
+        main = self.query_one("#main")
+        if main.has_class("narrow"):
+            main.remove_class("show-preview")
+            main.toggle_class("show-profile")
+            if main.has_class("show-profile"):
+                self.call_after_refresh(self.query_one("#profile-box").focus)  # hidden until the layout refreshes
 
     def action_open_external(self) -> None:
         """Open the active file (the one marked ``●``), or the one under the cursor when none is open,
@@ -404,11 +417,17 @@ class QtdvApp(App):
         self.selected_columns = None
         self.sheets = []
         self.sub_title = f"{record.path}  ·  Lvl {record.level}"
-        self.query_one("#sheets", OptionList).display = False
+        self._set_sheets_visible(False)
         self._show_preview(Text("Loading…", style="dim"))
         self.query_one("#profile", Static).update("")
         self._jump_to_preview_when_short()
         self._load_sheets(self._token, record)
+
+    def _set_sheets_visible(self, visible: bool) -> None:
+        """Show or hide Sheets / Tables. ``with-sheets`` lets the CSS keep the right-hand column
+        when the Profile is hidden but a workbook is open."""
+        self.query_one("#sheets", OptionList).display = visible
+        self.query_one("#main").set_class(visible, "with-sheets")
 
     def _jump_to_preview_when_short(self) -> None:
         """In a short window the Preview is hidden, so show it once a file is picked."""
@@ -445,7 +464,7 @@ class QtdvApp(App):
                 options.append(Option(Text(f"   ▸ Table: {table}"), id=f"t{SEP}{sheet.name}{SEP}{table}"))
         option_list.clear_options()
         option_list.add_options(options)
-        option_list.display = True
+        self._set_sheets_visible(True)
         self._load_target(record, sheets[0].name, None)
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
@@ -535,4 +554,7 @@ class QtdvApp(App):
         main.set_class(self.size.height < SHORT_BELOW_ROWS, "short")
         if not main.has_class("short"):
             main.remove_class("show-preview")  # the Preview is back on screen by itself
+        main.set_class(self.size.width < NARROW_BELOW_COLUMNS, "narrow")
+        if not main.has_class("narrow"):
+            main.remove_class("show-profile")
         self._render_views()

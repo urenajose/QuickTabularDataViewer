@@ -12,6 +12,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The Profile now hides when the window is narrow (under 100 columns), not when it is short.
+  Files use the freed width. Sheets / Tables stays on screen while a workbook is open. The new
+  `i` key shows the Profile full screen and toggles back; `Esc` leaves it.
 - The Preview now hides when the window is short (under 28 rows), not when it is narrow, because
   it lies along the bottom. `p` shows it full screen, and picking a file jumps to it, in a
   short window only. A narrow but tall window keeps the Preview.

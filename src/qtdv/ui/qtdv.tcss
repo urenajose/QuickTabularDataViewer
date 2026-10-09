@@ -23,6 +23,15 @@ ConfirmLargeFile { align: center middle; }
 ColumnPicker { align: center middle; }
 #picker { width: 60; height: 70%; padding: 1 2; border: thick $primary; background: $surface; }
 
+/* Narrow window (few columns): the Profile hides. The right-hand column stays only while a workbook is open,
+   so its Sheets / Tables list can still be used. i shows the Profile full screen. */
+#main.narrow #profile-box { display: none; }
+#main.narrow #side { display: none; }
+#main.narrow.with-sheets #side { display: block; }
+#main.narrow.show-profile #files { display: none; }
+#main.narrow.show-profile #side { display: block; width: 100%; }
+#main.narrow.show-profile #profile-box { display: block; }
+
 /* Short window (few rows): Files, Profile and Sheets fill the screen; p swaps them for the Preview. */
 #main.short #preview-box { display: none; }
 #main.short.show-preview #preview-box { display: block; height: 1fr; }

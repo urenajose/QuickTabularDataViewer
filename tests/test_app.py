@@ -1053,3 +1053,101 @@ def test_o_opens_the_active_file_even_when_the_cursor_is_on_another(tmp_path, mo
             assert opened == [folder / "alpha.csv"]
 
     run(scenario)
+
+
+def test_profile_hides_below_100_columns_and_files_take_the_room(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        for width, narrow in ((100, False), (99, True)):
+            app = QtdvApp(tmp_path, depth=0)
+            async with app.run_test(size=(width, 40)) as pilot:
+                await settle(app, pilot)
+                main = app.query_one("#main")
+                assert main.has_class("narrow") is narrow
+                assert (app.query_one("#profile-box").region.width == 0) is narrow
+                if narrow:
+                    assert app.query_one("#files").region.width >= width - 2  # no empty column beside it
+
+    run(scenario)
+
+
+def test_a_short_but_wide_window_keeps_the_profile(tmp_path):  # the Profile follows the width, not the height
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 24)) as pilot:
+            await settle(app, pilot)
+            assert not app.query_one("#main").has_class("narrow")
+            assert app.query_one("#profile-box").region.width > 20
+
+    run(scenario)
+
+
+def test_sheets_stay_reachable_when_the_profile_is_hidden(tmp_path, sample_xlsx):
+    async def scenario():
+        app = QtdvApp(sample_xlsx.parent, depth=0)
+        async with app.run_test(size=(90, 40)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)  # a workbook, so Sheets / Tables appears
+            assert app.query_one("#profile-box").region.width == 0
+            sheets = app.query_one("#sheets")
+            assert sheets.display and sheets.region.width > 20
+            await pilot.press("g")  # Files -> Sheets (the hidden Profile is skipped)
+            assert focused_id(app) == "sheets"
+
+    run(scenario)
+
+
+def test_i_shows_the_profile_full_screen_in_a_narrow_window_and_esc_leaves(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(90, 40)) as pilot:
+            await settle(app, pilot)
+            main = app.query_one("#main")
+            await open_first_file(app, pilot)
+            await pilot.press("i")
+            await pilot.pause()
+            assert main.has_class("show-profile")
+            assert app.query_one("#profile-box").region.width > 60 and app.query_one("#files").region.width == 0
+            assert focused_id(app) == "profile-box"
+            await pilot.press("escape")  # back to the file list; the file stays open
+            await pilot.pause()
+            assert not main.has_class("show-profile") and focused_id(app) == "files" and app.current is not None
+            await pilot.press("i", "i")  # i toggles
+            await pilot.pause()
+            assert not main.has_class("show-profile")
+
+    run(scenario)
+
+
+def test_i_does_nothing_when_the_profile_is_already_visible(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 40)) as pilot:
+            await settle(app, pilot)
+            await pilot.press("i")
+            assert not app.query_one("#main").has_class("show-profile")
+
+    run(scenario)
+
+
+def test_p_and_i_replace_each_other_in_a_small_window(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(90, 24)) as pilot:  # short and narrow: only Files fit
+            await settle(app, pilot)
+            main = app.query_one("#main")
+            await pilot.press("p")
+            assert main.has_class("show-preview") and not main.has_class("show-profile")
+            await pilot.press("i")
+            assert main.has_class("show-profile") and not main.has_class("show-preview")
+
+    run(scenario)
