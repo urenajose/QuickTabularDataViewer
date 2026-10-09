@@ -651,3 +651,26 @@ def test_file_rows_alternate_in_shade(tmp_path):
             assert set(row_backgrounds(table, 2)[:-1]) != set(row_backgrounds(table, 3)[:-1])
 
     run(scenario)
+
+
+def test_preview_scrolls_sideways_when_many_columns_are_chosen(tmp_path):
+    names = [f"column_{n:02d}" for n in range(14)]
+    (tmp_path / "wide.csv").write_text(",".join(names) + "\n" + ",".join(["some value"] * 14) + "\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            app.selected_columns = names  # as if all 14 were ticked in the column picker
+            app._render_views()
+            await pilot.pause()
+            box = app.query_one("#preview-box")
+            assert box.show_horizontal_scrollbar
+            assert box.max_scroll_x > 0
+            assert app.query_one("#preview").region.width > box.region.width  # not squeezed to fit
+            assert "column_13" in [str(c) for c in app.df.columns]
+
+    run(scenario)

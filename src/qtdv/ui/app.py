@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 from rich.cells import cell_len
+from rich.measure import Measurement
 from rich.text import Text
 from textual import work
 from textual.app import App, ComposeResult
@@ -306,7 +307,7 @@ class QtdvApp(App):
         self.sheets = []
         self.sub_title = f"{record.path}  ·  Lvl {record.level}"
         self.query_one("#sheets", OptionList).display = False
-        self.query_one("#preview", Static).update(Text("Loading…", style="dim"))
+        self._show_preview(Text("Loading…", style="dim"))
         self.query_one("#profile", Static).update("")
         self._load_sheets(self._token, record)
 
@@ -356,7 +357,7 @@ class QtdvApp(App):
         self.df = None  # the old table is no longer current
         self.profile_result = None
         self.selected_columns = None
-        self.query_one("#preview", Static).update(Text("Loading…", style="dim"))
+        self._show_preview(Text("Loading…", style="dim"))
         self._load_table(self._token, record, sheet, table)
 
     @work(thread=True, exclusive=True, group="table")
@@ -378,7 +379,7 @@ class QtdvApp(App):
             return
         self.df = None
         self.profile_result = None
-        self.query_one("#preview", Static).update(Text(message, style="bold red"))
+        self._show_preview(Text(message, style="bold red"))
         self.query_one("#profile", Static).update("")
         self._set_status(message)
 
@@ -396,16 +397,28 @@ class QtdvApp(App):
     def _columns_that_fit(self) -> int:
         return columns_that_fit(self.query_one("#preview-box").size.width or 80)
 
+    def _show_preview(self, renderable, scroll: bool = False) -> None:
+        """Show something in the Preview. A table (``scroll=True``) gets its natural width, so a wide one
+        scrolls sideways instead of being squeezed. Short messages keep the default width and wrap."""
+        widget = self.query_one("#preview", Static)
+        if scroll:
+            console = self.app.console
+            natural = Measurement.get(console, console.options.update(max_width=10_000), renderable).maximum
+            widget.styles.width = max(natural, 1)
+        else:
+            widget.styles.width = "auto"
+        widget.update(renderable)
+
     def _render_views(self) -> None:
         if self.df is None or self.profile_result is None:
             return
         try:
             preview = build_preview(self.df, 10, self._columns_that_fit(), self.selected_columns)
-            self.query_one("#preview", Static).update(render_preview(preview))
+            self._show_preview(render_preview(preview), scroll=True)
             self.query_one("#profile", Static).update(render_profile(self.profile_result))
         except Exception as exc:  # show the problem instead of closing the app
             message = f"Cannot display this table: {type(exc).__name__}: {exc}"
-            self.query_one("#preview", Static).update(Text(message, style="bold red"))
+            self._show_preview(Text(message, style="bold red"))
             self._set_status(message)
 
     def on_resize(self) -> None:

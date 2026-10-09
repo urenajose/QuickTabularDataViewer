@@ -12,6 +12,8 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The Preview keeps its natural width and scrolls sideways when the table is wider
+  than the panel (for example when many columns are chosen in the picker).
 - Long column names in the Profile are cut at 12 characters with `…`.
 - The Preview rows alternate in shade, like the Files rows.
 - The Files rows alternate in shade, so a row is easier to follow across the screen.
