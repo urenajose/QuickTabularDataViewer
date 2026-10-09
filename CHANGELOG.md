@@ -5,6 +5,11 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+### Removed
+
+- The `describe()` table and `Profile.describe`. The Profile panel keeps the row
+  and column counts and the per-column type, null count and unique count.
+
 ### Changed
 
 - Long file names in the Files panel wrap at 24 characters, so the Folder,

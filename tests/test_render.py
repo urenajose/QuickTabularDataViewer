@@ -44,12 +44,12 @@ def test_empty_table_renders():  # Review Focus 4
     assert "0 rows" in out
 
 
-def test_profile_lists_columns_and_stats():
+def test_profile_lists_columns_but_has_no_describe_table():
     df = pd.DataFrame({"n": [1.0, 2.0, None], "s": ["a", "b", "b"]})
     out = text_of(render_profile(profile(df)))
     assert "3 rows" in out and "2 columns" in out
     assert "nulls" in out and "unique" in out
-    assert "mean" in out
+    assert "describe" not in out and "mean" not in out  # the describe() table was removed on request
 
 
 def test_profile_of_empty_table_renders():  # Review Focus 4

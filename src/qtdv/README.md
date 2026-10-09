@@ -10,7 +10,7 @@ understand it without reading the others.
 | `cli.py` | Reads the command line (`qtdv [folder] [-r DEPTH]`) and starts the app. | the app |
 | `scanner.py` | Finds table files in a folder down to the chosen depth, and filters them by name, type and modified date. It never opens a file. | nothing else |
 | `loader.py` | **The only file that reads data files.** Lists sheets and named Tables, loads a table into a pandas DataFrame, and knows the 50 MB limit. | pandas, openpyxl, odfpy, xlrd |
-| `profiler.py` | Turns a DataFrame into plain results: the preview slice (first/last rows and columns) and the profile (rows, columns, nulls, unique counts, `describe()`). | pandas |
+| `profiler.py` | Turns a DataFrame into plain results: the preview slice (first/last rows and columns) and the profile (rows, columns, nulls, unique counts). | pandas |
 | `ui/` | Everything you see on screen. See [ui/README.md](ui/README.md). | the files above |
 
 ## How the pieces connect

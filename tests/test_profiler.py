@@ -60,8 +60,7 @@ def test_profile_numbers():
     assert prof.columns.loc["n", "unique"] == 2
     assert prof.columns.loc["s", "nulls"] == 1
     assert prof.columns.loc["s", "unique"] == 2
-    assert prof.describe.loc["count", "n"] == 3
-    assert prof.describe.loc["mean", "n"] == (1 + 2 + 2) / 3
+    assert not hasattr(prof, "describe")  # describe() was removed on request
 
 
 def test_profile_handles_mixed_and_cleaned_headers():  # Review Focus 2

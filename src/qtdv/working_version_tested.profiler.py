@@ -30,6 +30,7 @@ class Profile:
     rows: int
     cols: int
     columns: pd.DataFrame  # index = column name; columns: dtype, nulls, unique
+    describe: pd.DataFrame  # describe(include="all"), statistics as rows
 
 
 def build_preview(
@@ -62,7 +63,7 @@ def build_preview(
 
 
 def profile(df: pd.DataFrame) -> Profile:
-    """Row/column counts, and per-column type, null count and unique count."""
+    """Row/column counts, per-column type, null count and unique count, and ``describe()``."""
     columns = pd.DataFrame(
         {
             "dtype": df.dtypes.astype(str),
@@ -70,4 +71,8 @@ def profile(df: pd.DataFrame) -> Profile:
             "unique": df.nunique(dropna=True),
         }
     )
-    return Profile(df.shape[0], df.shape[1], columns)
+    try:
+        described = df.describe(include="all") if df.shape[1] else pd.DataFrame()
+    except ValueError:  # pandas refuses to describe some empty frames
+        described = pd.DataFrame()
+    return Profile(df.shape[0], df.shape[1], columns, described)
