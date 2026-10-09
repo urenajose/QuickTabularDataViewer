@@ -61,6 +61,7 @@ def test_search_filters_the_list(tmp_path):
 def test_type_key_cycles_filter(tmp_path):
     folder = make_folder(tmp_path)
     (folder / "book.ods").write_bytes(b"")
+    (folder / "table.tsv").write_text("a\tb\n1\t2\n")
 
     async def scenario():
         app = QtdvApp(folder, depth=0)
@@ -69,10 +70,12 @@ def test_type_key_cycles_filter(tmp_path):
             app.query_one("#files", DataTable).focus()
             await pilot.press("t")  # csv
             assert {r.ext for r in app.shown_files} == {".csv"}
+            await pilot.press("t")  # tsv
+            assert {r.ext for r in app.shown_files} == {".tsv"}
             await pilot.press("t", "t", "t")  # xlsx, xls, ods
             assert {r.ext for r in app.shown_files} == {".ods"}
             await pilot.press("t")  # back to all
-            assert len(app.shown_files) == 3
+            assert len(app.shown_files) == 4
 
     run(scenario)
 
@@ -939,5 +942,18 @@ def test_escape_closing_a_file_cancels_a_load_still_in_progress(tmp_path):
             await settle(app, pilot)
             assert app.current is None and app.df is None  # the late result is ignored
             assert "Select a file" in preview_text(app)
+
+    run(scenario)
+
+
+def test_tsv_file_opens_with_columns_split_on_tabs(tmp_path):
+    (tmp_path / "t.tsv").write_text("a\tb\n1\t2\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert app.df.columns.tolist() == ["a", "b"] and app.sheets == []
 
     run(scenario)

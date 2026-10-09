@@ -26,6 +26,7 @@ from qtdv.ui.screens import ColumnPicker, ConfirmLargeFile
 TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
     ("all", None),
     ("csv", frozenset({".csv"})),
+    ("tsv", frozenset({".tsv"})),
     ("xlsx", frozenset({".xlsx", ".xlsm"})),
     ("xls", frozenset({".xls"})),
     ("ods", frozenset({".ods"})),

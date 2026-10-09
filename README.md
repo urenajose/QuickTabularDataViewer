@@ -12,6 +12,7 @@ data and a statistical profile of it. It never changes your files.
 | Type | Extensions | Sheets | Named Excel Tables |
 |------|-----------|--------|--------------------|
 | CSV | `.csv` | no | no |
+| Tab-separated | `.tsv` | no | no |
 | Excel | `.xlsx`, `.xlsm` | yes | yes |
 | Old Excel | `.xls` | yes | no |
 | LibreOffice Calc | `.ods` | yes (names only) | no |

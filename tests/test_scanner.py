@@ -93,3 +93,8 @@ def test_parse_date():
         parse_date("2025-13-40")
     with pytest.raises(ValueError):
         parse_date("last week")
+
+
+def test_tsv_files_are_found(tmp_path):
+    (tmp_path / "t.TSV").write_text("a\tb\n1\t2\n")
+    assert names(scan(tmp_path, depth=0)) == ["t.TSV"]

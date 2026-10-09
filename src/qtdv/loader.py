@@ -22,6 +22,7 @@ LARGE_FILE_BYTES = 50 * 1024 * 1024
 _LEADING_ZERO = re.compile(r"^0\d")
 _OLE_MAGIC = b"\xd0\xcf\x11\xe0"  # an .xlsx that starts like this is encrypted
 _XLSX_EXTS = (".xlsx", ".xlsm")
+_DELIMITERS = {".csv": ",", ".tsv": "\t"}  # plain-text table files and the character that separates their fields
 _LONG_DIGITS = re.compile(r"\d{16,}")  # too long for a float to hold exactly
 _NS = {
     "m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
@@ -84,6 +85,8 @@ def _infer_types(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
+    """Read a .csv or .tsv file (the extension picks the separator)."""
+    sep = _DELIMITERS[path.suffix.lower()]
     last_error: Exception | None = None
     for encoding in ("utf-8-sig", "cp1252", "latin-1"):
         try:
@@ -92,11 +95,11 @@ def _read_csv(path: Path) -> pd.DataFrame:
                 # and a warning printed over the terminal screen would be noise.
                 warnings.simplefilter("ignore", pd.errors.ParserWarning)
                 try:
-                    return _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False))
+                    return _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, sep=sep))
                 except pd.errors.ParserError:
                     # A row further down has more fields than the header (for example an unquoted comma
                     # inside a note). The fast reader gives up; the slower one can cut the extra fields.
-                    return _read_csv_cutting_extra_fields(path, encoding)
+                    return _read_csv_cutting_extra_fields(path, encoding, sep)
         except UnicodeDecodeError as exc:
             last_error = exc
         except pd.errors.EmptyDataError:
@@ -106,15 +109,15 @@ def _read_csv(path: Path) -> pd.DataFrame:
     raise LoaderError(f"Unknown text encoding: {last_error}")
 
 
-def _read_csv_cutting_extra_fields(path: Path, encoding: str) -> pd.DataFrame:
-    """Read a CSV whose rows are longer than its header, cutting each row to the header's width.
+def _read_csv_cutting_extra_fields(path: Path, encoding: str, sep: str) -> pd.DataFrame:
+    """Read a CSV or TSV whose rows are longer than its header, cutting each row to the header's width.
 
     The result carries a note (``df.attrs["notes"]``) so the app can tell the user what was cut.
     """
-    df = _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, engine="python"))
+    df = _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, engine="python", sep=sep))
     width = len(df.columns)
     with open(path, newline="", encoding=encoding) as handle:
-        reader = csv.reader(handle)
+        reader = csv.reader(handle, delimiter=sep)
         long_rows = [reader.line_num for row in reader if len(row) > width]
     plural = "s" if len(long_rows) != 1 else ""
     first = f" (first at line {long_rows[0]})" if long_rows else ""
@@ -140,10 +143,10 @@ def _looks_encrypted(path: Path) -> bool:
 
 
 def list_sheets(path: Path | str) -> list[SheetInfo]:
-    """Sheets (and, for .xlsx, named Tables) in a file. CSV files have none."""
+    """Sheets (and, for .xlsx, named Tables) in a file. CSV and TSV files have none."""
     path = Path(path)
     ext = path.suffix.lower()
-    if ext == ".csv":
+    if ext in _DELIMITERS:
         return []
     try:
         if ext in _XLSX_EXTS:
@@ -168,7 +171,7 @@ def load_table(path: Path | str, sheet: str | None = None, table: str | None = N
     path = Path(path)
     ext = path.suffix.lower()
     try:
-        if ext == ".csv":
+        if ext in _DELIMITERS:
             df = _read_csv(path)
         elif table is not None and ext in _XLSX_EXTS:
             df = _read_xlsx_table(path, sheet, table)

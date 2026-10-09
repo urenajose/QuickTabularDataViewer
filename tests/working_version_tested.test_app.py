@@ -1,7 +1,7 @@
 import asyncio
 
 import pandas as pd
-from textual.widgets import DataTable, Input
+from textual.widgets import DataTable, Input, Static
 
 from qtdv.ui import app as app_module
 from qtdv.ui.app import QtdvApp
@@ -61,6 +61,7 @@ def test_search_filters_the_list(tmp_path):
 def test_type_key_cycles_filter(tmp_path):
     folder = make_folder(tmp_path)
     (folder / "book.ods").write_bytes(b"")
+    (folder / "table.tsv").write_text("a\tb\n1\t2\n")
 
     async def scenario():
         app = QtdvApp(folder, depth=0)
@@ -69,10 +70,12 @@ def test_type_key_cycles_filter(tmp_path):
             app.query_one("#files", DataTable).focus()
             await pilot.press("t")  # csv
             assert {r.ext for r in app.shown_files} == {".csv"}
+            await pilot.press("t")  # tsv
+            assert {r.ext for r in app.shown_files} == {".tsv"}
             await pilot.press("t", "t", "t")  # xlsx, xls, ods
             assert {r.ext for r in app.shown_files} == {".ods"}
             await pilot.press("t")  # back to all
-            assert len(app.shown_files) == 3
+            assert len(app.shown_files) == 4
 
     run(scenario)
 
@@ -835,5 +838,122 @@ def test_malformed_csv_row_is_cut_and_the_user_is_told(tmp_path):
             assert "extra fields" in app.status_message and "line 3" in app.status_message
             shown = app.query_one("#preview").content  # what the Preview panel is showing
             assert "extra fields" in "".join(seg.text for seg in app.console.render(shown))
+
+    run(scenario)
+
+
+def test_narrow_terminal_jumps_to_the_preview_when_a_file_is_picked(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(90, 40)) as pilot:
+            await settle(app, pilot)
+            main = app.query_one("#main")
+            assert not main.has_class("show-preview")
+            await open_first_file(app, pilot)
+            assert main.has_class("show-preview")  # the Preview is on screen, not the file list
+            assert focused_id(app) == "preview-box"
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 40)) as pilot:  # wide: all panels are already visible
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert not app.query_one("#main").has_class("show-preview")
+            assert focused_id(app) == "files"
+
+    run(scenario)
+
+
+def preview_text(app):
+    return str(app.query_one("#preview", Static).render())
+
+
+def test_escape_steps_back_one_layer_at_a_time_and_finally_closes_the_file(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await pilot.press("escape")  # nothing is open: nothing to close, nothing breaks
+            assert app.current is None
+            await open_first_file(app, pilot)
+            await pilot.press("g", "g")  # focus the Preview
+            assert focused_id(app) == "preview-box"
+            await pilot.press("escape")  # 1st: back to the file list, the file stays open
+            assert focused_id(app) == "files"
+            assert app.current.name == "alpha.csv" and marked_names(app) == ["alpha.csv"]
+            await pilot.press("escape")  # 2nd: the file is closed
+            await settle(app, pilot)
+            assert app.current is None and app.df is None and app.profile_result is None
+            assert marked_names(app) == []
+            assert "Select a file" in preview_text(app)
+            assert app.sub_title == ""
+            assert not app.query_one("#sheets").display
+
+    run(scenario)
+
+
+def test_escape_from_the_search_box_goes_to_the_file_list_first(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            await pilot.press("slash")
+            assert focused_id(app) == "search"
+            await pilot.press("escape")
+            assert focused_id(app) == "files" and app.current is not None
+
+    run(scenario)
+
+
+def test_escape_on_a_narrow_terminal_leaves_the_preview_then_closes_the_file(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(90, 40)) as pilot:
+            await settle(app, pilot)
+            main = app.query_one("#main")
+            await open_first_file(app, pilot)
+            assert main.has_class("show-preview")
+            await pilot.press("escape")  # 1st: back to the file list, the file stays open
+            await pilot.pause()
+            assert not main.has_class("show-preview") and focused_id(app) == "files"
+            assert app.current is not None
+            await pilot.press("escape")  # 2nd: close the file
+            assert app.current is None and not main.has_class("show-preview")
+
+    run(scenario)
+
+
+def test_escape_closing_a_file_cancels_a_load_still_in_progress(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter", "escape")  # close it before the result arrives
+            await settle(app, pilot)
+            assert app.current is None and app.df is None  # the late result is ignored
+            assert "Select a file" in preview_text(app)
+
+    run(scenario)
+
+
+def test_tsv_file_opens_with_columns_split_on_tabs(tmp_path):
+    (tmp_path / "t.tsv").write_text("a\tb\n1\t2\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert app.df.columns.tolist() == ["a", "b"] and app.sheets == []
 
     run(scenario)

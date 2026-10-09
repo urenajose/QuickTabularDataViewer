@@ -97,3 +97,22 @@ def test_us_states_sample_file_loads():
     df = load_table(Path(__file__).parent / "data" / "us_states_and_abbreviations.csv")
     assert df.shape == (43, 2)
     assert "line 15" in df.attrs["notes"][0]
+
+
+def test_tsv_is_split_on_tabs_and_keeps_commas_in_values(tmp_path):
+    df = load_table(write(tmp_path / "a.tsv", "id\tname\n1\tSmith, Ann\n2\tBo\n"))
+    assert df.columns.tolist() == ["id", "name"]
+    assert df["name"].tolist() == ["Smith, Ann", "Bo"]
+    assert pd.api.types.is_numeric_dtype(df["id"])
+
+
+def test_tsv_keeps_leading_zeros_and_has_no_sheets(tmp_path):
+    path = write(tmp_path / "a.tsv", "zip\tcity\n00501\tHoltsville\n")
+    assert load_table(path)["zip"].tolist() == ["00501"]
+    assert list_sheets(path) == []
+
+
+def test_tsv_row_with_an_extra_field_is_cut_and_reported(tmp_path):
+    df = load_table(write(tmp_path / "a.tsv", "a\tb\n1\t2\n3\t4\t5\n"))
+    assert df.shape == (2, 2)
+    assert "1 row had extra fields" in df.attrs["notes"][0]

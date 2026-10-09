@@ -48,6 +48,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+- `.tsv` (tab-separated) files are listed and opened like CSV files, with their own
+  `tsv` choice in the Type filter (`t`). Rows with extra fields are cut and reported
+  the same way as in CSV files.
 - On a narrow terminal, picking a file now jumps straight to the Preview
   (use `p` or `Esc` to go back to the file list).
 - Vim keys `h` `j` `k` `l` move the cursor or scroll inside the panel that has focus.

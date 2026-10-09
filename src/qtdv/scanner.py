@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
-SUPPORTED_EXTENSIONS = frozenset({".csv", ".xlsx", ".xlsm", ".xls", ".ods"})
+SUPPORTED_EXTENSIONS = frozenset({".csv", ".tsv", ".xlsx", ".xlsm", ".xls", ".ods"})
 
 
 @dataclass(frozen=True)
