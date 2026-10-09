@@ -751,3 +751,73 @@ def test_g_in_the_search_box_types_a_letter(tmp_path):
             assert app.query_one("#search", Input).value == "g"
 
     run(scenario)
+
+
+def test_j_and_k_move_the_file_cursor(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            table.focus()
+            assert table.cursor_row == 0
+            await pilot.press("j")
+            assert table.cursor_row == 1
+            await pilot.press("k")
+            assert table.cursor_row == 0
+
+    run(scenario)
+
+
+def test_hjkl_scroll_the_preview(tmp_path):
+    names = [f"column_{n:02d}" for n in range(14)]
+    rows = "\n".join(",".join(["some value"] * 14) for _ in range(40))
+    (tmp_path / "big.csv").write_text(",".join(names) + "\n" + rows + "\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            app.selected_columns = names
+            app._render_views()
+            await pilot.pause()
+            box = app.query_one("#preview-box")
+            box.focus()
+            await pilot.pause()
+            assert box.max_scroll_y > 0 and box.max_scroll_x > 0
+            await pilot.press("j", "j", "j")
+            await pilot.pause()
+            assert box.scroll_y > 0
+            await pilot.press("k", "k", "k", "k")
+            await pilot.pause()
+            assert box.scroll_y == 0
+            await pilot.press("l", "l", "l")
+            await pilot.pause()
+            assert box.scroll_x > 0
+            await pilot.press("h", "h", "h", "h")
+            await pilot.pause()
+            assert box.scroll_x == 0
+
+    run(scenario)
+
+
+def test_panel_keys_do_not_crash_while_a_pop_up_is_open(tmp_path, monkeypatch):
+    folder = make_folder(tmp_path)
+    monkeypatch.setattr(app_module, "is_large", lambda size: True)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await pilot.pause()
+            assert isinstance(app.screen, ConfirmLargeFile)
+            await pilot.press("g", "G", "j", "k", "h", "l")
+            await pilot.pause()
+            assert isinstance(app.screen, ConfirmLargeFile)  # still open, nothing crashed
+
+    run(scenario)

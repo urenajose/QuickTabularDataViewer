@@ -10,6 +10,7 @@ from rich.measure import Measurement
 from rich.text import Text
 from textual import work
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.widgets import DataTable, Footer, Header, Input, OptionList, Static
 from textual.widgets.option_list import Option
@@ -65,7 +66,11 @@ class QtdvApp(App):
         ("c", "pick_columns", "Columns"),
         ("p", "toggle_panel", "Preview/Files"),
         ("g", "panel(1)", "Next panel"),
-        ("G", "panel(-1)", "Prev panel"),
+        Binding("G", "panel(-1)", "Prev panel", show=False),  # not listed in the footer to keep it short
+        Binding("j", "move('down')", "Down", show=False),  # not listed in the footer to keep it short
+        Binding("k", "move('up')", "Up", show=False),  # not listed in the footer to keep it short
+        Binding("h", "move('left')", "Left", show=False),  # not listed in the footer to keep it short
+        Binding("l", "move('right')", "Right", show=False),  # not listed in the footer to keep it short
         ("f5", "refresh", "Refresh"),
         ("escape", "focus_files", "Files"),
         ("q", "quit", "Quit"),
@@ -260,6 +265,8 @@ class QtdvApp(App):
 
     def action_panel(self, step: int) -> None:
         """Move focus to the next (``1``) or previous (``-1``) panel. Hidden panels are skipped."""
+        if len(self.screen_stack) > 1:
+            return  # a pop-up is open; the panels are behind it
         panels = [w for w in (self.query_one(f"#{name}") for name in PANEL_ORDER) if w.display and w.region.width > 0]
         if not panels:
             return
@@ -269,6 +276,17 @@ class QtdvApp(App):
         else:  # focus is somewhere else, such as the search box: enter the cycle at its start or end
             target = panels[0] if step > 0 else panels[-1]
         target.focus()
+
+    def action_move(self, direction: str) -> None:
+        """Vim-style movement in whatever has focus: lists move their cursor, panels scroll."""
+        widget = self.focused
+        if widget is None or isinstance(widget, Input):
+            return
+        cursor = getattr(widget, f"action_cursor_{direction}", None)  # DataTable and OptionList rows
+        if cursor is not None and direction in ("up", "down"):
+            cursor()
+        else:
+            getattr(widget, f"action_scroll_{direction}", lambda: None)()
 
     def _mark_focus(self) -> None:
         """Put a ``▸`` in the title of the panel that has focus."""

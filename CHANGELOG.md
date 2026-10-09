@@ -41,6 +41,7 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+- Vim keys `h` `j` `k` `l` move the cursor or scroll inside the panel that has focus.
 - `g` and `Shift+G` jump between the panels. The panel with focus has a brighter
   border and a `▸` in its title.
 - The `.xls` test now runs against `tests/data/file_example_XLS_50.xls`.
