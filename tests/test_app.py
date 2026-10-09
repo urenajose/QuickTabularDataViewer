@@ -267,9 +267,14 @@ def test_narrow_terminal_uses_one_panel_and_p_toggles(tmp_path):
             await settle(app, pilot)
             main = app.query_one("#main")
             assert main.has_class("narrow")
-            assert not main.has_class("show-profile")
-            await pilot.press("p")
-            assert main.has_class("show-profile")
+            assert not main.has_class("show-preview")
+            assert app.query_one("#left").display and not app.query_one("#preview-box").region.width
+            await pilot.press("p")  # p switches to the Preview
+            assert main.has_class("show-preview")
+            assert app.query_one("#preview-box").region.width > 60 and not app.query_one("#left").region.width
+            await pilot.press("p")  # and back
+            assert not main.has_class("show-preview")
+            assert app.query_one("#left").region.width > 60
         app = QtdvApp(tmp_path, depth=0)
         async with app.run_test(size=(160, 40)) as pilot:
             await settle(app, pilot)
@@ -534,5 +539,24 @@ def test_cursor_on_the_opened_row_is_one_solid_cursor_colour(tmp_path):
             assert "#b7e4c7" not in colours  # the cursor wins over the tint
             assert len(colours) == 1  # and the row is not a patchwork
             assert marked_names(app) == ["alpha.csv"]  # the dot stays
+
+    run(scenario)
+
+
+def test_wide_layout_has_files_over_sheets_and_profile_with_preview_on_the_right(tmp_path, sample_xlsx):
+    async def scenario():
+        app = QtdvApp(sample_xlsx.parent, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("enter")
+            await settle(app, pilot)
+            files, sheets, profile, preview = (
+                app.query_one(sel).region for sel in ("#files", "#sheets", "#profile-box", "#preview-box")
+            )
+            assert files.bottom <= sheets.y and files.bottom <= profile.y  # Files on top, the others below it
+            assert sheets.right <= profile.x  # Sheets / Tables left of Profile
+            assert preview.x >= max(files.right, profile.right)  # Preview in its own column on the right
+            assert preview.height >= files.height + sheets.height  # and as tall as the left column
 
     run(scenario)

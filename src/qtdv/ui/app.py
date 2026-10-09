@@ -59,7 +59,7 @@ class QtdvApp(App):
         ("d", "focus_dates", "Dates"),
         ("t", "cycle_type", "Type"),
         ("c", "pick_columns", "Columns"),
-        ("p", "toggle_panel", "Preview/Profile"),
+        ("p", "toggle_panel", "Preview/Files"),
         ("f5", "refresh", "Refresh"),
         ("escape", "focus_files", "Files"),
         ("q", "quit", "Quit"),
@@ -92,13 +92,14 @@ class QtdvApp(App):
             yield Input(placeholder="From YYYY-MM-DD", id="date-from")
             yield Input(placeholder="To YYYY-MM-DD", id="date-to")
         with Horizontal(id="main"):
-            yield DataTable(id="files", cursor_type="row", cell_padding=0)  # padding lives inside the cells so the tint has no gaps
-            yield OptionList(id="sheets")
-            with Vertical(id="right"):
-                with VerticalScroll(id="preview-box"):
-                    yield Static("Select a file and press Enter", id="preview")
-                with VerticalScroll(id="profile-box"):
-                    yield Static("", id="profile")
+            with Vertical(id="left"):
+                yield DataTable(id="files", cursor_type="row", cell_padding=0)  # padding lives inside the cells so the tint has no gaps
+                with Horizontal(id="lower"):
+                    yield OptionList(id="sheets")
+                    with VerticalScroll(id="profile-box"):
+                        yield Static("", id="profile")
+            with VerticalScroll(id="preview-box"):
+                yield Static("Select a file and press Enter", id="preview")
         yield Static("", id="status")
         yield Footer()
 
@@ -235,7 +236,7 @@ class QtdvApp(App):
         self.apply_filters()
 
     def action_toggle_panel(self) -> None:
-        self.query_one("#main").toggle_class("show-profile")
+        self.query_one("#main").toggle_class("show-preview")
 
     def action_refresh(self) -> None:
         self._set_status("Scanning…")

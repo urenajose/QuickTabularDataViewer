@@ -7,6 +7,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- New layout: Files on top left, Sheets / Tables and Profile below it, and the
+  Preview in its own column on the right. On a narrow terminal the `p` key now
+  switches between the Preview and the left-hand panels.
 - The Files and Sheets / Tables panels now have a border and a title, like
   Preview and Profile. The Preview and Profile titles no longer show the file name.
 - The project is renamed from `qxc` (Quick Excel/CSV) to `qtdv` (Quick Tabular

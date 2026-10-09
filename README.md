@@ -49,13 +49,14 @@ so on. The selected file's full path and level also show in the header.
 
 ```
 + Search / Type / From / To -----------------------------------+
-+- Files (Lvl) ------+- Sheets/Tables -+- Preview -------------+
-| 0 a.csv            | Sales (4 x 2)   | first 10 / last 10    |
-| 1 b.xlsx           |   > Table: ...  | first 5 / last 5 cols |
-| 0 c.ods            | Notes           +- Profile -------------+
-|                    |                 | rows, columns, nulls, |
-|                    |                 | unique, describe()    |
-+--------------------+-----------------+-----------------------+
++- Files -------------------------+- Preview ------------------+
+| Lvl Name        Folder  Size .. | first 10 / last 10 rows    |
+| 0   a.csv                       | first 5 / last 5 columns   |
+| 1   b.xlsx                      |                            |
++- Sheets / Tables -+- Profile --+                            |
+| Sales (4 x 2)     | rows, cols |                            |
+|   > Table: ...    | nulls, ... |                            |
++-------------------+------------+----------------------------+
 ```
 
 - **Files** - every table file found, with level, folder, modified date and size.
@@ -76,7 +77,7 @@ so on. The selected file's full path and level also show in the header.
 | `t` | Cycle the file type filter: all, csv, xlsx, xls, ods |
 | `d` | Go to the date boxes (`From` and `To`, as `YYYY-MM-DD`) |
 | `c` | Choose which columns to show in the preview (Space = toggle, Enter = apply) |
-| `p` | On a narrow terminal, switch between Preview and Profile |
+| `p` | On a narrow terminal (under 110 columns), switch between the Preview and the Files / Sheets / Profile panels. Wide terminals show everything at once. |
 | `F5` | Scan the disk again to pick up new or changed files |
 | `Esc` | Go back to the file list |
 | `q` | Quit |
