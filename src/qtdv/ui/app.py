@@ -19,7 +19,7 @@ from textual.widgets.option_list import Option
 from qtdv.loader import LoaderError, SheetInfo, is_large, list_sheets, load_table
 from qtdv.opener import OpenError, open_in_default_program
 from qtdv.profiler import Profile, build_preview, profile
-from qtdv.scanner import FileRecord, filter_files, parse_date, scan
+from qtdv.scanner import ALL_LEVELS, FileRecord, filter_files, parse_date, scan
 from qtdv.ui.render import render_preview, render_profile
 from qtdv.ui.screens import ColumnPicker, ConfirmLargeFile
 
@@ -171,8 +171,9 @@ class QtdvApp(App):
         self._set_files_status()
 
     def _set_files_status(self) -> None:
+        depth = "all" if self.depth >= ALL_LEVELS else self.depth
         if self.shown_files:
-            self._set_status(f"{len(self.shown_files)} of {len(self.records)} files · depth {self.depth}")
+            self._set_status(f"{len(self.shown_files)} of {len(self.records)} files · depth {depth}")
         else:
             self._set_status("No files match")
 

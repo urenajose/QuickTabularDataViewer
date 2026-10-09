@@ -16,7 +16,7 @@ uv run pytest -v
 | `test_opener.py` | Opening a file in the default program on each system (the launchers are faked, nothing really opens). |
 | `test_profiler.py` | The preview slice and the profile numbers. |
 | `test_render.py` | The Rich tables, including data that contains square brackets. |
-| `test_cli.py` | The command line. |
+| `test_cli.py` | The command line, including `-ra` for all levels. |
 | `test_app.py` | The screen, run without a real terminal (headless). |
 | `test_package.py` | The package imports. |
 

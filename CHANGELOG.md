@@ -63,6 +63,8 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+- `qtdv -ra` (also `-r a` or `-r all`) scans every level of subfolders. The scanner remembers
+  the real folders it has walked, so a link that points back up the tree cannot loop forever.
 - `o` opens the file under the cursor in the default program of the operating system
   (Windows, macOS and Linux), so Excel and Calc files can be edited where they belong.
   The new `opener.py` module does this with the standard library only.

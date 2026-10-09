@@ -26,6 +26,7 @@ uv sync                  # install the libraries
 uv run qtdv               # scan the current folder
 uv run qtdv C:\some\folder          # scan a different folder
 uv run qtdv . -r 2        # also scan 2 levels of subfolders
+uv run qtdv . -ra         # scan every level of subfolders
 ```
 
 ### How `-r` works
@@ -38,6 +39,11 @@ default is `0`, which means only the files directly in the folder.
 | `qtdv` or `qtdv . -r 0` | the folder only |
 | `qtdv . -r 1` | the folder and its subfolders |
 | `qtdv . -r 3` | the folder and 3 levels of subfolders |
+| `qtdv . -ra` (also `-r a` or `-r all`) | the folder and **every** level of subfolders; the status line says `depth all` |
+
+A folder link (a symbolic link or Windows junction) that points back up the tree is
+followed only once, so `-ra` cannot loop forever. Scanning a very large tree such as your
+whole home folder can take a while.
 
 The file that is open shows a `●` in the first column and a light green row.
 The cursor row keeps its normal highlight, so you can tell the two apart.

@@ -1,9 +1,10 @@
 import os
+import subprocess
 from datetime import date, datetime
 
 import pytest
 
-from qtdv.scanner import filter_files, parse_date, scan
+from qtdv.scanner import ALL_LEVELS, filter_files, parse_date, scan
 
 
 @pytest.fixture
@@ -98,3 +99,30 @@ def test_parse_date():
 def test_tsv_files_are_found(tmp_path):
     (tmp_path / "t.TSV").write_text("a\tb\n1\t2\n")
     assert names(scan(tmp_path, depth=0)) == ["t.TSV"]
+
+
+def test_all_levels_finds_files_however_deep(tmp_path):
+    deep = tmp_path
+    for name in ("a", "b", "c", "d", "e"):
+        deep = deep / name
+        deep.mkdir()
+    (deep / "bottom.csv").write_text("x\n1\n")
+    (tmp_path / "top.csv").write_text("x\n1\n")
+    records = scan(tmp_path, depth=ALL_LEVELS)
+    assert names(records) == ["bottom.csv", "top.csv"]
+    assert next(r for r in records if r.name == "bottom.csv").level == 5
+
+
+def test_a_folder_loop_is_not_followed_forever(tmp_path):
+    (tmp_path / "one.csv").write_text("x\n1\n")
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    link = sub / "loop"
+    try:
+        link.symlink_to(tmp_path, target_is_directory=True)  # points back up to the root
+    except OSError:
+        # Windows without the symlink right: a junction is the same kind of loop and needs no special right
+        made = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(tmp_path)], capture_output=True)
+        if made.returncode != 0:
+            pytest.skip("this system cannot create a folder link")
+    assert names(scan(tmp_path, depth=ALL_LEVELS)) == ["one.csv"]  # and it comes back instead of running away

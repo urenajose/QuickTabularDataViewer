@@ -6,13 +6,11 @@ It only looks at names, sizes and dates.
 
 from __future__ import annotations
 
-import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
-ALL_LEVELS = sys.maxsize  # a depth that means "every subfolder level"
 SUPPORTED_EXTENSIONS = frozenset({".csv", ".tsv", ".xlsx", ".xlsm", ".xls", ".ods"})
 
 
@@ -42,14 +40,9 @@ def scan(folder: Path | str, depth: int = 0) -> list[FileRecord]:
         raise NotADirectoryError(f"Not a folder: {root}")
 
     records: list[FileRecord] = []
-    visited: set[Path] = set()  # real folders already walked, so a link that points back up cannot loop forever
 
     def walk(directory: Path, level: int) -> None:
         try:
-            real = directory.resolve()
-            if real in visited:
-                return
-            visited.add(real)
             entries = sorted(directory.iterdir(), key=lambda p: p.name.lower())
         except OSError:
             return

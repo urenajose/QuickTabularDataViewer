@@ -6,12 +6,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from qtdv.scanner import ALL_LEVELS
-
 
 def _depth(text: str) -> int:
-    if text.strip().lower() in ("a", "all"):
-        return ALL_LEVELS
     try:
         value = int(text)
     except ValueError:
@@ -22,7 +18,7 @@ def _depth(text: str) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Read ``qtdv [folder] [-r DEPTH|a]``."""
+    """Read ``qtdv [folder] [-r DEPTH]``."""
     parser = argparse.ArgumentParser(
         prog="qtdv",
         description="Browse and profile CSV, Excel and LibreOffice Calc files in the terminal.",
@@ -34,8 +30,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=_depth,
         default=0,
         metavar="DEPTH",
-        help="subfolder levels to scan below the folder (default: 0 = the folder only); "
-        "use a (as in -ra) or all for every level",
+        help="subfolder levels to scan below the folder (default: 0 = the folder only)",
     )
     return parser.parse_args(argv)
 

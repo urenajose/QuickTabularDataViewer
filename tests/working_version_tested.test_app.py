@@ -4,6 +4,7 @@ import pandas as pd
 from textual.widgets import DataTable, Input, Static
 
 from qtdv.ui import app as app_module
+from qtdv.scanner import ALL_LEVELS
 from qtdv.ui.app import QtdvApp
 from qtdv.ui.screens import ColumnPicker, ConfirmLargeFile
 
@@ -1207,5 +1208,18 @@ def test_panels_follow_the_window_size_both_when_it_shrinks_and_when_it_grows_ba
             await pilot.pause()
             assert not main.has_class("short") and not main.has_class("narrow")
             assert app.query_one("#preview-box").region.width > 100 and app.query_one("#profile-box").region.width > 20
+
+    run(scenario)
+
+
+def test_status_line_says_all_levels_when_the_depth_is_unlimited(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=ALL_LEVELS)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            assert len(app.shown_files) == 3  # alpha, beta and the file one level down
+            assert "depth all" in app.status_message
 
     run(scenario)
