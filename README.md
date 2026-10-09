@@ -66,7 +66,7 @@ so on. The selected file's full path and level also show in the header.
   a table has many columns, the first 5 and last 5 show, with a `…` column
   between them. Fewer columns show on a narrow terminal.
 - **Profile** - number of rows and columns; for each column its type, null count
-  and unique count.
+  and unique count. Column names longer than 12 characters are cut with `…`.
 
 ## Keys
 

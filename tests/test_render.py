@@ -86,3 +86,10 @@ def test_preview_rows_alternate_in_shade():
 
     assert backgrounds("r0") != backgrounds("r1")  # neighbouring rows differ
     assert backgrounds("r0") == backgrounds("r2")  # every second row matches
+
+
+def test_profile_clips_long_column_names_at_12_characters():
+    df = pd.DataFrame({"abcdefghijklmnopqrstuvwxyz": [1, 2]})
+    out = text_of(render_profile(profile(df)))
+    assert "abcdefghijk…" in out  # 11 characters and an ellipsis make 12
+    assert "abcdefghijkl" not in out
