@@ -1189,3 +1189,23 @@ def test_header_shows_the_folder_then_the_active_file_not_the_cursor_file(tmp_pa
             assert str(folder) in header_line(app) and "alpha.csv" not in header_line(app)
 
     run(scenario)
+
+
+def test_panels_follow_the_window_size_both_when_it_shrinks_and_when_it_grows_back(tmp_path):
+    (tmp_path / "a.csv").write_text("a\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            main = app.query_one("#main")
+            await pilot.resize_terminal(80, 20)  # small in both directions: Preview and Profile hide
+            await pilot.pause()
+            assert main.has_class("short") and main.has_class("narrow")
+            assert app.query_one("#preview-box").region.width == 0 and app.query_one("#profile-box").region.width == 0
+            await pilot.resize_terminal(160, 50)  # big again: both come back
+            await pilot.pause()
+            assert not main.has_class("short") and not main.has_class("narrow")
+            assert app.query_one("#preview-box").region.width > 100 and app.query_one("#profile-box").region.width > 20
+
+    run(scenario)

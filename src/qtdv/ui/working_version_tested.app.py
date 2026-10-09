@@ -9,7 +9,7 @@ from rich.cells import cell_len
 from rich.console import Group
 from rich.measure import Measurement
 from rich.text import Text
-from textual import work
+from textual import events, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, ScrollableContainer, Vertical
@@ -550,12 +550,13 @@ class QtdvApp(App):
             self._show_preview(Text(message, style="bold red"))
             self._set_status(message)
 
-    def on_resize(self) -> None:
+    def on_resize(self, event: events.Resize) -> None:
+        # Use the size in the event: ``self.size`` is not updated yet when this runs, so it is one resize behind.
         main = self.query_one("#main")
-        main.set_class(self.size.height < SHORT_BELOW_ROWS, "short")
+        main.set_class(event.size.height < SHORT_BELOW_ROWS, "short")
         if not main.has_class("short"):
             main.remove_class("show-preview")  # the Preview is back on screen by itself
-        main.set_class(self.size.width < NARROW_BELOW_COLUMNS, "narrow")
+        main.set_class(event.size.width < NARROW_BELOW_COLUMNS, "narrow")
         if not main.has_class("narrow"):
             main.remove_class("show-profile")
         self._render_views()

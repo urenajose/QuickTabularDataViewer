@@ -48,6 +48,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Fixed
 
+- After shrinking the window, the Preview and Profile stayed hidden when the window was made big
+  again. The panel rules read the window size one resize too late; they now use the size in the
+  resize event.
 - A CSV with a row that has more fields than the header (for example an unquoted
   comma inside a note) failed with "Cannot parse CSV". It now opens, the extra
   values are cut, and a yellow warning with the first line number shows above the
