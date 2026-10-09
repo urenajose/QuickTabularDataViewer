@@ -9,7 +9,7 @@ from rich.cells import cell_len
 from rich.text import Text
 from textual import work
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.widgets import DataTable, Footer, Header, Input, OptionList, Static
 from textual.widgets.option_list import Option
 
@@ -93,14 +93,14 @@ class QtdvApp(App):
             yield Static("Type: all", id="type")
             yield Input(placeholder="From YYYY-MM-DD", id="date-from")
             yield Input(placeholder="To YYYY-MM-DD", id="date-to")
-        with Horizontal(id="main"):
-            with Vertical(id="left"):
+        with Vertical(id="main"):
+            with Horizontal(id="top"):
                 yield DataTable(id="files", cursor_type="row", cell_padding=0)  # padding lives inside the cells so the tint has no gaps
-                with Horizontal(id="lower"):
-                    yield OptionList(id="sheets")
-                    with VerticalScroll(id="profile-box"):
+                with Vertical(id="side"):
+                    with ScrollableContainer(id="profile-box"):
                         yield Static("", id="profile")
-            with VerticalScroll(id="preview-box"):
+                    yield OptionList(id="sheets")
+            with ScrollableContainer(id="preview-box"):
                 yield Static("Select a file and press Enter", id="preview")
         yield Static("", id="status")
         yield Footer()

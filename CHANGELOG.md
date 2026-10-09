@@ -16,9 +16,10 @@ Format: https://keepachangelog.com/en/1.0.0/
 - Long file names in the Files panel wrap at 24 characters, so the Folder,
   Modified and Size columns fit on screen. The row grows taller and the tint
   covers every line.
-- New layout: Files on top left, Sheets / Tables and Profile below it, and the
-  Preview in its own column on the right. On a narrow terminal the `p` key now
-  switches between the Preview and the left-hand panels.
+- New layout: Files on the left with Profile above Sheets / Tables to its right,
+  and the Preview across the full width at the bottom. Every panel scrolls
+  when its content does not fit. On a narrow terminal the `p` key now
+  switches between the Preview and the other panels.
 - The Files and Sheets / Tables panels now have a border and a title, like
   Preview and Profile. The Preview and Profile titles no longer show the file name.
 - The project is renamed from `qxc` (Quick Excel/CSV) to `qtdv` (Quick Tabular

@@ -48,15 +48,14 @@ so on. The selected file's full path and level also show in the header.
 ## The screen
 
 ```
-+ Search / Type / From / To -----------------------------------+
-+- Files -------------------------+- Preview ------------------+
-| Lvl Name        Folder  Size .. | first 10 / last 10 rows    |
-| 0   a.csv                       | first 5 / last 5 columns   |
-| 1   b.xlsx                      |                            |
-+- Sheets / Tables -+- Profile --+                            |
-| Sales (4 x 2)     | rows, cols |                            |
-|   > Table: ...    | nulls, ... |                            |
-+-------------------+------------+----------------------------+
++ Search / Type / From / To ---------------------------------------+
++- Files ---------------------------+- Profile ------------------+
+| Lvl Name  Modified  Size  Folder  | rows, columns, nulls ...   |
+| 0   a.csv                         +- Sheets / Tables ----------+
+| 1   b.xlsx                        | Sales (4 x 2)              |
++- Preview -------------------------+----------------------------+
+| first 10 / last 10 rows, first 5 / last 5 columns              |
++----------------------------------------------------------------+
 ```
 
 - **Files** - every table file found, with level, name, modified date, size and folder (last).
@@ -78,7 +77,7 @@ so on. The selected file's full path and level also show in the header.
 | `t` | Cycle the file type filter: all, csv, xlsx, xls, ods |
 | `d` | Go to the date boxes (`From` and `To`, as `YYYY-MM-DD`) |
 | `c` | Choose which columns to show in the preview (Space = toggle, Enter = apply) |
-| `p` | On a narrow terminal (under 110 columns), switch between the Preview and the Files / Sheets / Profile panels. Wide terminals show everything at once. |
+| `p` | On a narrow terminal (under 110 columns), switch between the Preview (full screen) and the Files / Profile / Sheets panels. Wide terminals show everything at once. |
 | `F5` | Scan the disk again to pick up new or changed files |
 | `Esc` | Go back to the file list |
 | `q` | Quit |
