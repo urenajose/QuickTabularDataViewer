@@ -77,3 +77,23 @@ def test_long_digit_ids_with_blanks_stay_text(tmp_path):  # review #2
 def test_ragged_row_is_not_shifted(tmp_path):  # review #9
     df = load_table(write(tmp_path / "r.csv", "a,b\n1,2,3,4\n"))
     assert df.iloc[0].tolist() == [1, 2]
+
+
+def test_extra_field_on_a_later_row_is_cut_and_reported(tmp_path):  # the us_states file
+    df = load_table(write(tmp_path / "late.csv", "a,b\n1,2\n3,4,5\n6,7\n"))
+    assert df.shape == (3, 2)
+    assert df.values.tolist() == [[1, 2], [3, 4], [6, 7]]
+    (note,) = df.attrs["notes"]
+    assert "1 row" in note and "line 3" in note
+
+
+def test_a_clean_file_has_no_notes(tmp_path):
+    assert not load_table(write(tmp_path / "ok.csv", "a,b\n1,2\n")).attrs.get("notes")
+
+
+def test_us_states_sample_file_loads():
+    from pathlib import Path
+
+    df = load_table(Path(__file__).parent / "data" / "us_states_and_abbreviations.csv")
+    assert df.shape == (43, 2)
+    assert "line 15" in df.attrs["notes"][0]

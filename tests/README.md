@@ -31,3 +31,9 @@ The `.xls` test reads `tests/data/file_example_XLS_50.xls`, a public sample
 file with made-up names and data (no real client data). If the file is missing,
 the test is skipped. Creating `.xls` files from code needs a library that has
 not been approved, so this file is supplied by hand.
+
+## Other sample files in `tests\data`
+
+- `us_states_and_abbreviations.csv` - a public list of US states. Line 15 is
+  damaged on purpose (an unquoted comma inside a note makes it three fields), so
+  it tests that a malformed row is cut and reported instead of failing.

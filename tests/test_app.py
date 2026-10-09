@@ -821,3 +821,19 @@ def test_panel_keys_do_not_crash_while_a_pop_up_is_open(tmp_path, monkeypatch):
             assert isinstance(app.screen, ConfirmLargeFile)  # still open, nothing crashed
 
     run(scenario)
+
+
+def test_malformed_csv_row_is_cut_and_the_user_is_told(tmp_path):
+    (tmp_path / "late.csv").write_text("a,b\n1,2\n3,4,5\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)
+            assert app.df.shape == (2, 2)  # it loads instead of failing
+            assert "extra fields" in app.status_message and "line 3" in app.status_message
+            shown = app.query_one("#preview").content  # what the Preview panel is showing
+            assert "extra fields" in "".join(seg.text for seg in app.console.render(shown))
+
+    run(scenario)

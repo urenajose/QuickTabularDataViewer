@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 from rich.cells import cell_len
+from rich.console import Group
 from rich.measure import Measurement
 from rich.text import Text
 from textual import work
@@ -437,7 +438,8 @@ class QtdvApp(App):
         self._render_views()
         where = f" › {sheet}" if sheet else ""
         where += f" › {table}" if table else ""
-        self._set_status(f"{record.name}{where} · {len(df):,} rows")
+        notes = "".join(f" · ⚠ {note}" for note in df.attrs.get("notes", []))
+        self._set_status(f"{record.name}{where} · {len(df):,} rows{notes}")
 
     def _columns_that_fit(self) -> int:
         return columns_that_fit(self.query_one("#preview-box").size.width or 80)
@@ -459,7 +461,9 @@ class QtdvApp(App):
             return
         try:
             preview = build_preview(self.df, 10, self._columns_that_fit(), self.selected_columns)
-            self._show_preview(render_preview(preview), scroll=True)
+            shown = render_preview(preview)
+            notes = [Text(f"⚠ {note}", style="yellow") for note in self.df.attrs.get("notes", [])]
+            self._show_preview(Group(*notes, shown) if notes else shown, scroll=True)
             self.query_one("#profile", Static).update(render_profile(self.profile_result))
         except Exception as exc:  # show the problem instead of closing the app
             message = f"Cannot display this table: {type(exc).__name__}: {exc}"

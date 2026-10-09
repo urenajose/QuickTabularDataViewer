@@ -33,6 +33,10 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Fixed
 
+- A CSV with a row that has more fields than the header (for example an unquoted
+  comma inside a note) failed with "Cannot parse CSV". It now opens, the extra
+  values are cut, and a yellow warning with the first line number shows above the
+  Preview and in the status line.
 - The opened-file tint now fills the whole row. Before, only the text was tinted,
   so it looked like patches of green over the cursor colour.
 - While the cursor is on the opened file, the cursor colour is shown on its own

@@ -6,9 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 from rich.cells import cell_len
+from rich.measure import Measurement
 from rich.text import Text
 from textual import work
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.widgets import DataTable, Footer, Header, Input, OptionList, Static
 from textual.widgets.option_list import Option
@@ -28,6 +30,7 @@ TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
     ("ods", frozenset({".ods"})),
 ]
 SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
+PANEL_ORDER = ("files", "profile-box", "sheets", "preview-box")  # the order g walks through the panels
 PANEL_TITLES = {"#files": "Files", "#sheets": "Sheets / Tables", "#preview-box": "Preview", "#profile-box": "Profile"}
 NAME_COLUMN = 2  # index of "Name" in FILE_COLUMNS
 NAME_WRAP_WIDTH = 24  # long file names wrap at this many characters
@@ -62,6 +65,12 @@ class QtdvApp(App):
         ("t", "cycle_type", "Type"),
         ("c", "pick_columns", "Columns"),
         ("p", "toggle_panel", "Preview/Files"),
+        ("g", "panel(1)", "Next panel"),
+        Binding("G", "panel(-1)", "Prev panel", show=False),  # not listed in the footer to keep it short
+        Binding("j", "move('down')", "Down", show=False),  # not listed in the footer to keep it short
+        Binding("k", "move('up')", "Up", show=False),  # not listed in the footer to keep it short
+        Binding("h", "move('left')", "Left", show=False),  # not listed in the footer to keep it short
+        Binding("l", "move('right')", "Right", show=False),  # not listed in the footer to keep it short
         ("f5", "refresh", "Refresh"),
         ("escape", "focus_files", "Files"),
         ("q", "quit", "Quit"),
@@ -95,7 +104,7 @@ class QtdvApp(App):
             yield Input(placeholder="To YYYY-MM-DD", id="date-to")
         with Vertical(id="main"):
             with Horizontal(id="top"):
-                yield DataTable(id="files", cursor_type="row", cell_padding=0)  # padding lives inside the cells so the tint has no gaps
+                yield DataTable(id="files", cursor_type="row", cell_padding=0, zebra_stripes=True)  # padding lives inside the cells so the tint has no gaps
                 with Vertical(id="side"):
                     with ScrollableContainer(id="profile-box"):
                         yield Static("", id="profile")
@@ -254,6 +263,43 @@ class QtdvApp(App):
         self.query_one("#type", Static).update(Text(f"Type: {TYPE_CHOICES[self.type_index][0]}"))
         self.apply_filters()
 
+    def action_panel(self, step: int) -> None:
+        """Move focus to the next (``1``) or previous (``-1``) panel. Hidden panels are skipped."""
+        if len(self.screen_stack) > 1:
+            return  # a pop-up is open; the panels are behind it
+        panels = [w for w in (self.query_one(f"#{name}") for name in PANEL_ORDER) if w.display and w.region.width > 0]
+        if not panels:
+            return
+        focused = self.focused
+        if focused in panels:
+            target = panels[(panels.index(focused) + step) % len(panels)]
+        else:  # focus is somewhere else, such as the search box: enter the cycle at its start or end
+            target = panels[0] if step > 0 else panels[-1]
+        target.focus()
+
+    def action_move(self, direction: str) -> None:
+        """Vim-style movement in whatever has focus: lists move their cursor, panels scroll."""
+        widget = self.focused
+        if widget is None or isinstance(widget, Input):
+            return
+        cursor = getattr(widget, f"action_cursor_{direction}", None)  # DataTable and OptionList rows
+        if cursor is not None and direction in ("up", "down"):
+            cursor()
+        else:
+            getattr(widget, f"action_scroll_{direction}", lambda: None)()
+
+    def _mark_focus(self) -> None:
+        """Put a ``▸`` in the title of the panel that has focus."""
+        for selector, title in PANEL_TITLES.items():
+            widget = self.query_one(selector)
+            widget.border_title = f"▸ {title}" if widget is self.focused else title
+
+    def on_descendant_focus(self, event) -> None:
+        self.call_after_refresh(self._mark_focus)
+
+    def on_descendant_blur(self, event) -> None:
+        self.call_after_refresh(self._mark_focus)
+
     def action_toggle_panel(self) -> None:
         self.query_one("#main").toggle_class("show-preview")
 
@@ -306,7 +352,7 @@ class QtdvApp(App):
         self.sheets = []
         self.sub_title = f"{record.path}  ·  Lvl {record.level}"
         self.query_one("#sheets", OptionList).display = False
-        self.query_one("#preview", Static).update(Text("Loading…", style="dim"))
+        self._show_preview(Text("Loading…", style="dim"))
         self.query_one("#profile", Static).update("")
         self._load_sheets(self._token, record)
 
@@ -356,7 +402,7 @@ class QtdvApp(App):
         self.df = None  # the old table is no longer current
         self.profile_result = None
         self.selected_columns = None
-        self.query_one("#preview", Static).update(Text("Loading…", style="dim"))
+        self._show_preview(Text("Loading…", style="dim"))
         self._load_table(self._token, record, sheet, table)
 
     @work(thread=True, exclusive=True, group="table")
@@ -378,7 +424,7 @@ class QtdvApp(App):
             return
         self.df = None
         self.profile_result = None
-        self.query_one("#preview", Static).update(Text(message, style="bold red"))
+        self._show_preview(Text(message, style="bold red"))
         self.query_one("#profile", Static).update("")
         self._set_status(message)
 
@@ -396,16 +442,28 @@ class QtdvApp(App):
     def _columns_that_fit(self) -> int:
         return columns_that_fit(self.query_one("#preview-box").size.width or 80)
 
+    def _show_preview(self, renderable, scroll: bool = False) -> None:
+        """Show something in the Preview. A table (``scroll=True``) gets its natural width, so a wide one
+        scrolls sideways instead of being squeezed. Short messages keep the default width and wrap."""
+        widget = self.query_one("#preview", Static)
+        if scroll:
+            console = self.app.console
+            natural = Measurement.get(console, console.options.update(max_width=10_000), renderable).maximum
+            widget.styles.width = max(natural, 1)
+        else:
+            widget.styles.width = "auto"
+        widget.update(renderable)
+
     def _render_views(self) -> None:
         if self.df is None or self.profile_result is None:
             return
         try:
             preview = build_preview(self.df, 10, self._columns_that_fit(), self.selected_columns)
-            self.query_one("#preview", Static).update(render_preview(preview))
+            self._show_preview(render_preview(preview), scroll=True)
             self.query_one("#profile", Static).update(render_profile(self.profile_result))
         except Exception as exc:  # show the problem instead of closing the app
             message = f"Cannot display this table: {type(exc).__name__}: {exc}"
-            self.query_one("#preview", Static).update(Text(message, style="bold red"))
+            self._show_preview(Text(message, style="bold red"))
             self._set_status(message)
 
     def on_resize(self) -> None:

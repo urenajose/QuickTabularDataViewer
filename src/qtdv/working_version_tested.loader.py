@@ -7,7 +7,6 @@ Phase 1 is read-only.
 
 from __future__ import annotations
 
-import csv
 import posixpath
 import re
 import warnings
@@ -91,12 +90,7 @@ def _read_csv(path: Path) -> pd.DataFrame:
                 # Extra fields on a row are dropped (index_col=False); pandas warns about that,
                 # and a warning printed over the terminal screen would be noise.
                 warnings.simplefilter("ignore", pd.errors.ParserWarning)
-                try:
-                    return _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False))
-                except pd.errors.ParserError:
-                    # A row further down has more fields than the header (for example an unquoted comma
-                    # inside a note). The fast reader gives up; the slower one can cut the extra fields.
-                    return _read_csv_cutting_extra_fields(path, encoding)
+                return _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False))
         except UnicodeDecodeError as exc:
             last_error = exc
         except pd.errors.EmptyDataError:
@@ -104,22 +98,6 @@ def _read_csv(path: Path) -> pd.DataFrame:
         except pd.errors.ParserError as exc:
             raise LoaderError(f"Cannot parse CSV: {exc}") from exc
     raise LoaderError(f"Unknown text encoding: {last_error}")
-
-
-def _read_csv_cutting_extra_fields(path: Path, encoding: str) -> pd.DataFrame:
-    """Read a CSV whose rows are longer than its header, cutting each row to the header's width.
-
-    The result carries a note (``df.attrs["notes"]``) so the app can tell the user what was cut.
-    """
-    df = _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, engine="python"))
-    width = len(df.columns)
-    with open(path, newline="", encoding=encoding) as handle:
-        reader = csv.reader(handle)
-        long_rows = [reader.line_num for row in reader if len(row) > width]
-    plural = "s" if len(long_rows) != 1 else ""
-    first = f" (first at line {long_rows[0]})" if long_rows else ""
-    df.attrs["notes"] = [f"{len(long_rows)} row{plural} had extra fields and the extra values were cut{first}"]
-    return df
 
 
 def _wrap(path: Path, exc: Exception) -> LoaderError:
