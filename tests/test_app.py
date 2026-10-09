@@ -957,3 +957,69 @@ def test_tsv_file_opens_with_columns_split_on_tabs(tmp_path):
             assert app.df.columns.tolist() == ["a", "b"] and app.sheets == []
 
     run(scenario)
+
+
+def test_o_opens_the_highlighted_file_in_the_default_program(tmp_path, monkeypatch):
+    folder = make_folder(tmp_path)
+    opened = []
+    monkeypatch.setattr(app_module, "open_in_default_program", opened.append)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("down", "o")  # the cursor is on beta.csv
+            assert opened == [folder / "beta.csv"]
+            assert "beta.csv" in app.status_message and app.current is None  # opening elsewhere does not open it here
+
+    run(scenario)
+
+
+def test_o_shows_the_reason_when_the_file_cannot_be_opened(tmp_path, monkeypatch):
+    folder = make_folder(tmp_path)
+
+    def refuse(path):
+        raise app_module.OpenError("xdg-open is not installed")
+
+    monkeypatch.setattr(app_module, "open_in_default_program", refuse)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("o")
+            assert "xdg-open is not installed" in app.status_message
+
+    run(scenario)
+
+
+def test_o_with_no_files_does_nothing(tmp_path, monkeypatch):
+    opened = []
+    monkeypatch.setattr(app_module, "open_in_default_program", opened.append)
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            app.query_one("#files", DataTable).focus()
+            await pilot.press("o")
+            assert opened == [] and "No file" in app.status_message
+
+    run(scenario)
+
+
+def test_o_in_the_search_box_types_a_letter(tmp_path, monkeypatch):
+    folder = make_folder(tmp_path)
+    opened = []
+    monkeypatch.setattr(app_module, "open_in_default_program", opened.append)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await pilot.press("slash", "o")
+            assert app.query_one("#search", Input).value == "o" and opened == []
+
+    run(scenario)

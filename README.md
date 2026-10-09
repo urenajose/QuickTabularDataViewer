@@ -75,12 +75,13 @@ so on. The selected file's full path and level also show in the header.
 |-----|--------------|
 | `Enter` | Open the highlighted file (or sheet/Table in the sheet list) |
 | `/` | Go to the search box (name contains the text, any case) |
-| `t` | Cycle the file type filter: all, csv, xlsx, xls, ods |
+| `t` | Cycle the file type filter: all, csv, tsv, xlsx, xls, ods |
 | `d` | Go to the date boxes (`From` and `To`, as `YYYY-MM-DD`) |
 | `c` | Choose which columns to show in the preview (Space = toggle, Enter = apply) |
 | `p` | On a narrow terminal (under 110 columns), switch between the Preview (full screen) and the Files / Profile / Sheets panels. Wide terminals show everything at once. Picking a file on a narrow terminal opens the Preview by itself. |
 | `g` / `G` | Jump to the next / previous panel: Files, Profile, Sheets / Tables, Preview. The panel with focus shows a `▸` in its title. Sheets / Tables is skipped when it is hidden. |
 | `j` `k` `h` `l` | Move like Vim inside the panel that has focus: `j`/`k` move down/up (in Files, the row cursor), `h`/`l` scroll left/right. Arrow keys, PageUp/PageDown, Home and End work too. |
+| `o` | Open the file under the cursor in the program your system uses for it (Excel or LibreOffice for workbooks, your spreadsheet or text editor for CSV and TSV). Works on Windows, macOS and Linux (Linux needs `xdg-open`). |
 | `F5` | Scan the disk again to pick up new or changed files |
 | `Esc` | Step back: leave the narrow-screen Preview, then return to the file list, then close the open file (clears Preview, Profile and the `●` mark) |
 | `q` | Quit |
@@ -123,8 +124,11 @@ See [src/qtdv/README.md](src/qtdv/README.md) for what each module does,
 ## Roadmap
 
 1. **Phase 1 (this version):** view only.
-2. **Phase 2:** edit cell values and save to the file or as a copy. Note that
-   saving an Excel file with pandas can lose formatting and formulas.
-3. **Phase 3:** add and delete rows and columns, and rename columns.
+2. **Phase 2:** edit cell values in `.csv` and `.tsv` files and save to the file or as a copy.
+3. **Phase 3:** add and delete rows and columns, and rename columns, in `.csv` and `.tsv` files.
+
+Excel and LibreOffice files (`.xlsx`, `.xlsm`, `.xls`, `.ods`) stay view-only on purpose:
+saving them with pandas can lose formatting and formulas. Press `o` to open them in
+their own program instead.
 4. **Maybe later:** DuckDB for very large CSV files (needs approval first), and a
    filter by level.

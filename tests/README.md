@@ -13,6 +13,7 @@ uv run pytest -v
 | `test_scanner.py` | Depth numbering (`-r 0`, `-r 1`, ...), name, type and date filters, ignored files. |
 | `test_loader_csv.py` | CSV reading: encodings, leading zeros, odd headers, empty files. |
 | `test_loader_excel.py` | `.xlsx`, `.ods` and `.xls` reading, sheets, named Tables, locked and damaged files. |
+| `test_opener.py` | Opening a file in the default program on each system (the launchers are faked, nothing really opens). |
 | `test_profiler.py` | The preview slice and the profile numbers. |
 | `test_render.py` | The Rich tables, including data that contains square brackets. |
 | `test_cli.py` | The command line. |

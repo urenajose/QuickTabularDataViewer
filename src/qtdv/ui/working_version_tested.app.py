@@ -17,6 +17,7 @@ from textual.widgets import DataTable, Footer, Header, Input, OptionList, Static
 from textual.widgets.option_list import Option
 
 from qtdv.loader import LoaderError, SheetInfo, is_large, list_sheets, load_table
+from qtdv.opener import OpenError, open_in_default_program
 from qtdv.profiler import Profile, build_preview, profile
 from qtdv.scanner import FileRecord, filter_files, parse_date, scan
 from qtdv.ui.render import render_preview, render_profile
@@ -73,6 +74,7 @@ class QtdvApp(App):
         Binding("k", "move('up')", "Up", show=False),  # not listed in the footer to keep it short
         Binding("h", "move('left')", "Left", show=False),  # not listed in the footer to keep it short
         Binding("l", "move('right')", "Right", show=False),  # not listed in the footer to keep it short
+        ("o", "open_external", "Open in app"),
         ("f5", "refresh", "Refresh"),
         ("escape", "back", "Back"),
         ("q", "quit", "Quit"),
@@ -335,6 +337,19 @@ class QtdvApp(App):
 
     def action_toggle_panel(self) -> None:
         self.query_one("#main").toggle_class("show-preview")
+
+    def action_open_external(self) -> None:
+        """Open the file under the cursor in the program the operating system uses for it."""
+        record = self._cursor_record
+        if record is None:
+            self._set_status("No file to open")
+            return
+        try:
+            open_in_default_program(record.path)
+        except OpenError as exc:
+            self._set_status(str(exc))
+        else:
+            self._set_status(f"Sent {record.name} to the default program")
 
     def action_refresh(self) -> None:
         self._set_status("Scanning…")

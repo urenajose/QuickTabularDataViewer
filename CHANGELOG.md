@@ -48,6 +48,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+- `o` opens the file under the cursor in the default program of the operating system
+  (Windows, macOS and Linux), so Excel and Calc files can be edited where they belong.
+  The new `opener.py` module does this with the standard library only.
 - `.tsv` (tab-separated) files are listed and opened like CSV files, with their own
   `tsv` choice in the Type filter (`t`). Rows with extra fields are cut and reported
   the same way as in CSV files.

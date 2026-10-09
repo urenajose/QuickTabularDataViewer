@@ -165,6 +165,9 @@ Problems appear as a message in the panel and never crash the app.
 ## 12. Later Phases (not in scope now)
 
 - **Phase 2 - cell editing:** change a cell value and save to the file or as a
-  copy. Risk: pandas can lose formatting and formulas when saving Excel files.
-- **Phase 3 - structure editing:** add/delete rows and columns, rename columns.
+  copy. *Updated 2026-10-09:* `.csv` and `.tsv` files only. Excel and Calc files stay
+  view-only because pandas can lose formatting and formulas when saving them; the
+  `o` key opens them in their own program instead.
+- **Phase 3 - structure editing:** add/delete rows and columns, rename columns
+  (`.csv` and `.tsv` only).
 - **Optional:** DuckDB for large CSVs, a filter by level, a recent-folders list.
