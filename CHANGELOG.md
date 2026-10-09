@@ -12,6 +12,7 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The Preview rows alternate in shade, like the Files rows.
 - The Files rows alternate in shade, so a row is easier to follow across the screen.
 - Files columns are now Lvl, Name, Modified, Size and Folder, so Folder is last.
 - Long file names in the Files panel wrap at 24 characters, so the Folder,

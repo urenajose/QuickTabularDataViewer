@@ -71,3 +71,18 @@ def test_float_id_column_with_a_blank_shows_full_digits():  # review #2
     df = pd.DataFrame({"id": [123456789012.0, None, 1234567.0]})
     out = text_of(render_preview(build_preview(df)))
     assert "123456789012" in out and "e+" not in out
+
+
+def test_preview_rows_alternate_in_shade():
+    from rich.console import Console
+
+    df = pd.DataFrame({"v": ["r0", "r1", "r2", "r3"]})
+    console = Console(width=40, force_terminal=True, color_system="truecolor")
+    lines = console.render_lines(render_preview(build_preview(df)), console.options, pad=False)
+
+    def backgrounds(token):
+        line = next(seg_line for seg_line in lines if token in "".join(seg.text for seg in seg_line))
+        return {seg.style.bgcolor.name for seg in line if seg.style and seg.style.bgcolor and token in seg.text}
+
+    assert backgrounds("r0") != backgrounds("r1")  # neighbouring rows differ
+    assert backgrounds("r0") == backgrounds("r2")  # every second row matches

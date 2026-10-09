@@ -15,6 +15,7 @@ from qtdv.profiler import Preview, Profile
 
 GAP = "…"
 DIVIDER = "⋮"
+STRIPE = "on #262c33"  # every second preview row, a little lighter than the background
 
 
 def _cell(value) -> Text:
@@ -37,7 +38,7 @@ def render_preview(preview: Preview) -> Group:
     summary = f"{preview.total_rows:,} rows × {preview.total_cols:,} columns"
     if preview.hidden_cols:
         summary += f" · {preview.hidden_cols:,} not shown"
-    table = Table(header_style="bold cyan")
+    table = Table(header_style="bold cyan", row_styles=["", STRIPE])
     names = list(preview.head.columns)
     if not names:  # Rich prints nothing for a table with no columns
         table.add_column(Text("(no columns)", style="dim"))
