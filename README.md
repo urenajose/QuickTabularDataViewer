@@ -121,6 +121,11 @@ statistics are correct.
 - Columns with a blank or repeated header get a name such as `Unnamed: 2` or
   `name.1`.
 - Excel formulas show their last saved value.
+- A CSV or TSV row with **more fields than the header** (usually an unquoted comma inside a
+  value) is still shown: the extra values are cut, and a yellow warning above the Preview names
+  each such row (`line 10: 4 fields instead of 3, extra values cut`). Only the first 10 are
+  listed; after that one line says `10+ rows had extra fields` and gives the total. The status
+  line shows a short summary. A comma inside quotes is part of the value and gives no warning.
 
 ## Project layout
 

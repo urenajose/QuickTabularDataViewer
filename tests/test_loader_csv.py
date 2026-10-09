@@ -83,8 +83,32 @@ def test_extra_field_on_a_later_row_is_cut_and_reported(tmp_path):  # the us_sta
     df = load_table(write(tmp_path / "late.csv", "a,b\n1,2\n3,4,5\n6,7\n"))
     assert df.shape == (3, 2)
     assert df.values.tolist() == [[1, 2], [3, 4], [6, 7]]
-    (note,) = df.attrs["notes"]
-    assert "1 row" in note and "line 3" in note
+    assert df.attrs["notes"] == ["line 3: 3 fields instead of 2, extra values cut"]
+    assert df.attrs["summary"] == ["1 row had extra fields and the extra values were cut"]
+
+
+def test_each_bad_row_gets_its_own_note_with_its_line_number(tmp_path):
+    df = load_table(write(tmp_path / "late.csv", "a,b\n1,2\n3,4,5\n6,7\n8,9,10,11\n"))
+    assert df.shape == (4, 2)
+    assert df.attrs["notes"] == [
+        "line 3: 3 fields instead of 2, extra values cut",
+        "line 5: 4 fields instead of 2, extra values cut",
+    ]
+    assert df.attrs["summary"] == ["2 rows had extra fields and the extra values were cut"]
+
+
+def test_more_than_ten_bad_rows_list_ten_and_say_there_are_more(tmp_path):
+    text = "a,b\n" + "".join(f"{i},{i},x\n" for i in range(12))
+    df = load_table(write(tmp_path / "many.csv", text))
+    notes = df.attrs["notes"]
+    assert len(notes) == 11 and notes[0].startswith("line 2:") and notes[9].startswith("line 11:")
+    assert "10+" in notes[10] and "12" in notes[10]
+    assert df.attrs["summary"] == ["12 rows had extra fields and the extra values were cut"]
+
+
+def test_exactly_ten_bad_rows_need_no_more_line(tmp_path):
+    text = "a,b\n" + "".join(f"{i},{i},x\n" for i in range(10))
+    assert len(load_table(write(tmp_path / "ten.csv", text)).attrs["notes"]) == 10
 
 
 def test_a_clean_file_has_no_notes(tmp_path):
@@ -95,8 +119,11 @@ def test_us_states_sample_file_loads():
     from pathlib import Path
 
     df = load_table(Path(__file__).parent / "data" / "us_states_and_abbreviations.csv")
-    assert df.shape == (43, 2)
-    assert "line 15" in df.attrs["notes"][0]
+    assert df.shape == (43, 3)
+    # Florida and New York have an unquoted comma in Notes, so they have one field too many
+    assert [note.split(":")[0] for note in df.attrs["notes"]] == ["line 10", "line 33"]
+    # Texas has a comma too, but its Notes value is quoted ("" escapes the quotes), so it is fine
+    assert df.loc[df["State"] == "Texas", "Notes"].tolist() == ['"Austin, South-Central"']
 
 
 def test_tsv_is_split_on_tabs_and_keeps_commas_in_values(tmp_path):
@@ -115,4 +142,5 @@ def test_tsv_keeps_leading_zeros_and_has_no_sheets(tmp_path):
 def test_tsv_row_with_an_extra_field_is_cut_and_reported(tmp_path):
     df = load_table(write(tmp_path / "a.tsv", "a\tb\n1\t2\n3\t4\t5\n"))
     assert df.shape == (2, 2)
-    assert "1 row had extra fields" in df.attrs["notes"][0]
+    assert df.attrs["notes"] == ["line 3: 3 fields instead of 2, extra values cut"]
+    assert "1 row had extra fields" in df.attrs["summary"][0]

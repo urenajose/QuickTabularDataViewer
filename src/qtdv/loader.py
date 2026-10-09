@@ -23,6 +23,7 @@ _LEADING_ZERO = re.compile(r"^0\d")
 _OLE_MAGIC = b"\xd0\xcf\x11\xe0"  # an .xlsx that starts like this is encrypted
 _XLSX_EXTS = (".xlsx", ".xlsm")
 _DELIMITERS = {".csv": ",", ".tsv": "\t"}  # plain-text table files and the character that separates their fields
+MAX_ROW_NOTES = 10  # bad rows listed one by one; after that a single line says how many more there are
 _LONG_DIGITS = re.compile(r"\d{16,}")  # too long for a float to hold exactly
 _NS = {
     "m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
@@ -90,16 +91,20 @@ def _read_csv(path: Path) -> pd.DataFrame:
     last_error: Exception | None = None
     for encoding in ("utf-8-sig", "cp1252", "latin-1"):
         try:
-            with warnings.catch_warnings():
-                # Extra fields on a row are dropped (index_col=False); pandas warns about that,
-                # and a warning printed over the terminal screen would be noise.
-                warnings.simplefilter("ignore", pd.errors.ParserWarning)
+            with warnings.catch_warnings(record=True) as caught:
+                # pandas only warns (it prints over the terminal screen) when it drops extra fields on the
+                # first rows, so the warnings are collected here and never printed.
+                warnings.simplefilter("always", pd.errors.ParserWarning)
                 try:
-                    return _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, sep=sep))
+                    df = pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, sep=sep)
                 except pd.errors.ParserError:
                     # A row further down has more fields than the header (for example an unquoted comma
                     # inside a note). The fast reader gives up; the slower one can cut the extra fields.
                     return _read_csv_cutting_extra_fields(path, encoding, sep)
+            if any(issubclass(w.category, pd.errors.ParserWarning) for w in caught):
+                # The fast reader already cut extra fields without saying how many; count them for the user.
+                return _read_csv_cutting_extra_fields(path, encoding, sep)
+            return _infer_types(df)
         except UnicodeDecodeError as exc:
             last_error = exc
         except pd.errors.EmptyDataError:
@@ -112,16 +117,28 @@ def _read_csv(path: Path) -> pd.DataFrame:
 def _read_csv_cutting_extra_fields(path: Path, encoding: str, sep: str) -> pd.DataFrame:
     """Read a CSV or TSV whose rows are longer than its header, cutting each row to the header's width.
 
-    The result carries a note (``df.attrs["notes"]``) so the app can tell the user what was cut.
+    The result tells the app what was cut: ``df.attrs["notes"]`` has one line per bad row (the first
+    ``MAX_ROW_NOTES``, then one line saying how many more) and ``df.attrs["summary"]`` has one short sentence.
     """
-    df = _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, engine="python", sep=sep))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", pd.errors.ParserWarning)  # the cut is reported through the notes instead
+        df = _infer_types(pd.read_csv(path, dtype=str, encoding=encoding, index_col=False, engine="python", sep=sep))
     width = len(df.columns)
     with open(path, newline="", encoding=encoding) as handle:
         reader = csv.reader(handle, delimiter=sep)
-        long_rows = [reader.line_num for row in reader if len(row) > width]
+        long_rows = [(reader.line_num, len(row)) for row in reader if len(row) > width]
+    if not long_rows:
+        return df
+    notes = [
+        f"line {line}: {fields} fields instead of {width}, extra values cut" for line, fields in long_rows[:MAX_ROW_NOTES]
+    ]
+    if len(long_rows) > MAX_ROW_NOTES:
+        notes.append(
+            f"{MAX_ROW_NOTES}+ rows had extra fields: the first {MAX_ROW_NOTES} are listed above, {len(long_rows)} in total"
+        )
     plural = "s" if len(long_rows) != 1 else ""
-    first = f" (first at line {long_rows[0]})" if long_rows else ""
-    df.attrs["notes"] = [f"{len(long_rows)} row{plural} had extra fields and the extra values were cut{first}"]
+    df.attrs["notes"] = notes
+    df.attrs["summary"] = [f"{len(long_rows)} row{plural} had extra fields and the extra values were cut"]
     return df
 
 

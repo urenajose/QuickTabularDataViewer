@@ -12,6 +12,12 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- A CSV or TSV row with too many fields now gets its own yellow warning above the Preview, with
+  its line number (`line 10: 4 fields instead of 3, extra values cut`). The first 10 are listed,
+  then one line says `10+ rows had extra fields` with the total. The status line shows a short
+  summary instead of the first line number.
+- `tests/data/us_states_and_abbreviations.csv` now has a `Notes` column: Florida and New York
+  are error examples (unquoted comma) and Texas is a valid quoted example.
 - The Files panel shows `Enter: preview file` in its bottom border, and the footer calls the `p` key
   `Preview / File` (it previews one file).
 - The header title is left-aligned and the location follows it on the same line: the folder
@@ -50,6 +56,8 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Fixed
 
+- A CSV whose first data row (or every row) had more fields than the header lost the extra values
+  without any warning. It now gets the same warning as any other bad row.
 - After shrinking the window, the Preview and Profile stayed hidden when the window was made big
   again. The panel rules read the window size one resize too late; they now use the size in the
   resize event.

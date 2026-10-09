@@ -35,6 +35,9 @@ not been approved, so this file is supplied by hand.
 
 ## Other sample files in `tests\data`
 
-- `us_states_and_abbreviations.csv` - a public list of US states. Line 15 is
-  damaged on purpose (an unquoted comma inside a note makes it three fields), so
-  it tests that a malformed row is cut and reported instead of failing.
+- `us_states_and_abbreviations.csv` - a public list of US states with a `Notes` column. It is an
+  example of the three kinds of comma:
+  - Florida (line 10) and New York (line 33) have an **unquoted** comma in Notes, so each row has
+    one field too many. They are cut and reported, one warning per row, instead of failing.
+  - Texas has a comma too, but its value is **quoted** (`"""Austin, South-Central"""`, where `""`
+    stands for one quote mark), so it is a normal value and gets no warning.

@@ -521,7 +521,8 @@ class QtdvApp(App):
         self._render_views()
         where = f" › {sheet}" if sheet else ""
         where += f" › {table}" if table else ""
-        notes = "".join(f" · ⚠ {note}" for note in df.attrs.get("notes", []))
+        # the status line gets the short summary; the detail for each bad row is shown above the Preview
+        notes = "".join(f" · ⚠ {note}" for note in df.attrs.get("summary") or df.attrs.get("notes", []))
         self._set_status(f"{record.name}{where} · {len(df):,} rows{notes}")
 
     def _columns_that_fit(self) -> int:

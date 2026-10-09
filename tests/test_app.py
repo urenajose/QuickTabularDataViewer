@@ -850,9 +850,10 @@ def test_malformed_csv_row_is_cut_and_the_user_is_told(tmp_path):
             await settle(app, pilot)
             await open_first_file(app, pilot)
             assert app.df.shape == (2, 2)  # it loads instead of failing
-            assert "extra fields" in app.status_message and "line 3" in app.status_message
+            assert "extra fields" in app.status_message  # a short summary in the status line
             shown = app.query_one("#preview").content  # what the Preview panel is showing
-            assert "extra fields" in "".join(seg.text for seg in app.console.render(shown))
+            text = "".join(seg.text for seg in app.console.render(shown))
+            assert "line 3: 3 fields instead of 2" in text  # and the detail for each bad row above the table
 
     run(scenario)
 
