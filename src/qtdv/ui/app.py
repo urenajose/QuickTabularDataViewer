@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+from rich.cells import cell_len
 from rich.text import Text
 from textual import work
 from textual.app import App, ComposeResult
@@ -27,6 +28,7 @@ TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
     ("ods", frozenset({".ods"})),
 ]
 SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
+FILE_COLUMNS = ("", "Lvl", "Name", "Folder", "Modified", "Size")
 OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
 
@@ -46,7 +48,7 @@ def human_size(size: int) -> str:
     return f"{size} B"
 
 
-class QxcApp(App):
+class QtdvApp(App):
     """Browse table files in a folder and see a preview and profile of each."""
 
     TITLE = "Quick Tabular Data Viewer"
@@ -71,6 +73,8 @@ class QxcApp(App):
         self.type_index = 0
         self.current: FileRecord | None = None
         self._column_keys: list = []
+        self._widths: list[int] = []
+        self._cursor_record: FileRecord | None = None  # the file the cursor is on
         self.sheets: list[SheetInfo] = []
         self.df: pd.DataFrame | None = None
         self.profile_result: Profile | None = None
@@ -87,7 +91,7 @@ class QxcApp(App):
             yield Input(placeholder="From YYYY-MM-DD", id="date-from")
             yield Input(placeholder="To YYYY-MM-DD", id="date-to")
         with Horizontal(id="main"):
-            yield DataTable(id="files", cursor_type="row")
+            yield DataTable(id="files", cursor_type="row", cell_padding=0)  # padding lives inside the cells so the tint has no gaps
             yield OptionList(id="sheets")
             with Vertical(id="right"):
                 with VerticalScroll(id="preview-box"):
@@ -99,8 +103,6 @@ class QxcApp(App):
 
     def on_mount(self) -> None:
         table = self.query_one("#files", DataTable)
-        self._column_keys = [table.add_column(" ", width=1)]  # the opened-file dot
-        self._column_keys += table.add_columns("Lvl", "Name", "Folder", "Modified", "Size")
         self.query_one("#preview-box").border_title = "Preview"
         self.query_one("#profile-box").border_title = "Profile"
         self.query_one("#sheets", OptionList).display = False
@@ -144,27 +146,50 @@ class QxcApp(App):
             date_to=self._read_date("#date-to"),
         )
         table = self.query_one("#files", DataTable)
-        table.clear()
-        for rec in self.shown_files:
-            table.add_row(*self._row_cells(rec), key=str(rec.path))
+        self._fill_table(table)
         if self.shown_files:
             self._set_status(f"{len(self.shown_files)} of {len(self.records)} files · depth {self.depth}")
         else:
             self._set_status("No files match")
 
-    def _row_cells(self, rec: FileRecord) -> list[Text]:
-        """Cells for one row. The opened file gets a dot and a light green tint."""
-        opened = rec == self.current
-        style = OPENED_STYLE if opened else ""
-        # Text so names such as "Report [final].csv" are not read as markup
+    @staticmethod
+    def _row_values(rec: FileRecord, opened: bool) -> list[str]:
         return [
-            Text("●" if opened else " ", style=style),
-            Text(str(rec.level), style=style),
-            Text(rec.name, style=style),
-            Text(rec.rel_dir or ".", style=style),
-            Text(f"{rec.modified:%Y-%m-%d %H:%M}", style=style),
-            Text(human_size(rec.size), style=style),
+            "●" if opened else "",
+            str(rec.level),
+            rec.name,
+            rec.rel_dir or ".",
+            f"{rec.modified:%Y-%m-%d %H:%M}",
+            human_size(rec.size),
         ]
+
+    def _fill_table(self, table: DataTable) -> None:
+        """Rebuild the file table. Column widths are worked out here so every cell can fill its column."""
+        labels = FILE_COLUMNS  # the first column holds the opened-file dot
+        rows = [self._row_values(rec, rec == self.current) for rec in self.shown_files]
+        self._widths = [max([cell_len(label)] + [cell_len(row[i]) for row in rows]) for i, label in enumerate(labels)]
+        table.clear(columns=True)  # columns too, so widths shrink again after a filter
+        self._cursor_record = None
+        self._column_keys = [table.add_column(self._pad(label, w)) for label, w in zip(labels, self._widths)]
+        for rec in self.shown_files:
+            table.add_row(*self._row_cells(rec), key=str(rec.path))
+        self._sync_cursor()
+
+    @staticmethod
+    def _pad(value: str, width: int) -> str:
+        return f" {value}{' ' * (width - cell_len(value))} "
+
+    def _row_cells(self, rec: FileRecord) -> list[Text]:
+        """Cells for one row. The opened file gets a dot and a light green tint.
+
+        Each cell is padded to its full column width (the table itself adds no padding), so the tint
+        runs unbroken across the row. While the cursor is on the opened row the tint is left off,
+        so the cursor colour is not mixed with it.
+        """
+        opened = rec == self.current
+        style = OPENED_STYLE if opened and rec != self._cursor_record else ""
+        # Text so names such as "Report [final].csv" are not read as markup
+        return [Text(self._pad(v, w), style=style) for v, w in zip(self._row_values(rec, opened), self._widths)]
 
     def _restyle_rows(self, *records: FileRecord | None) -> None:
         """Redraw the given rows in place, so the cursor does not move."""
@@ -174,6 +199,17 @@ class QxcApp(App):
                 continue
             for column_key, cell in zip(self._column_keys, self._row_cells(rec)):
                 table.update_cell(str(rec.path), column_key, cell)
+
+    def _sync_cursor(self) -> None:
+        """Remember which file the cursor is on and redraw the rows whose look depends on it."""
+        table = self.query_one("#files", DataTable)
+        previous = self._cursor_record
+        row = table.cursor_row
+        self._cursor_record = self.shown_files[row] if 0 <= row < len(self.shown_files) else None
+        self._restyle_rows(previous, self._cursor_record)
+
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        self._sync_cursor()
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self.apply_filters()

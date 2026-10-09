@@ -11,6 +11,14 @@ Format: https://keepachangelog.com/en/1.0.0/
   Data Viewer). The command is now `qtdv`, the Python package is `qtdv`, and the
   old `qxc` command is removed.
 
+### Fixed
+
+- The opened-file tint now fills the whole row. Before, only the text was tinted,
+  so it looked like patches of green over the cursor colour.
+- While the cursor is on the opened file, the cursor colour is shown on its own
+  (the `●` stays). The tint comes back when the cursor moves away.
+- The app class was still called `QxcApp`; it is now `QtdvApp`.
+
 ### Added
 
 - The `.xls` test now runs against `tests/data/file_example_XLS_50.xls`.

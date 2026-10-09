@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     if not folder.is_dir():
         print(f"qtdv: not a folder: {folder}", file=sys.stderr)
         return 2
-    from qtdv.ui.app import QxcApp  # imported here so --help stays fast
+    from qtdv.ui.app import QtdvApp  # imported here so --help stays fast
 
-    QxcApp(folder, args.depth).run()
+    QtdvApp(folder, args.depth).run()
     return 0
