@@ -1,3 +1,4 @@
+HeaderTitle { content-align: left middle; }  /* title and file location start at the left, after the icon */
 #filters { height: 3; }
 #search { width: 1fr; }
 #type { width: 14; content-align: center middle; }

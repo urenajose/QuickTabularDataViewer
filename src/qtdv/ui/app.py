@@ -126,6 +126,7 @@ class QtdvApp(App):
         for selector, title in PANEL_TITLES.items():
             self.query_one(selector).border_title = title
         self._set_sheets_visible(False)
+        self.sub_title = str(self.folder)  # the open file's path replaces it while a file is open
         table.focus()
         self.rescan()
 
@@ -291,7 +292,7 @@ class QtdvApp(App):
         self.profile_result = None
         self.selected_columns = None
         self.sheets = []
-        self.sub_title = ""
+        self.sub_title = str(self.folder)
         self._set_sheets_visible(False)
         self.query_one("#profile", Static).update("")
         self._show_preview(Text("Select a file and press Enter"))

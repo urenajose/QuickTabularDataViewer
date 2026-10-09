@@ -12,6 +12,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The header title is left-aligned and the location follows it on the same line: the folder
+  being browsed, or the path of the open (active) file once one is opened. It no longer
+  depends on the cursor row.
 - The Profile now hides when the window is narrow (under 100 columns), not when it is short.
   Files use the freed width. Sheets / Tables stays on screen while a workbook is open. The new
   `i` key shows the Profile full screen and toggles back; `Esc` leaves it.

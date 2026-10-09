@@ -902,7 +902,7 @@ def test_escape_steps_back_one_layer_at_a_time_and_finally_closes_the_file(tmp_p
             assert app.current is None and app.df is None and app.profile_result is None
             assert marked_names(app) == []
             assert "Select a file" in preview_text(app)
-            assert app.sub_title == ""
+            assert app.sub_title == str(folder)
             assert not app.query_one("#sheets").display
 
     run(scenario)
@@ -1149,5 +1149,43 @@ def test_p_and_i_replace_each_other_in_a_small_window(tmp_path):
             assert main.has_class("show-preview") and not main.has_class("show-profile")
             await pilot.press("i")
             assert main.has_class("show-profile") and not main.has_class("show-preview")
+
+    run(scenario)
+
+
+def header_line(app):
+    """The text of the top screen row, where the title and the file location are drawn."""
+    return "".join(segment.text for segment in app.screen._compositor.render_strips()[0])
+
+
+def test_header_title_is_left_aligned(tmp_path):
+    make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(200, 40)) as pilot:
+            await settle(app, pilot)
+            line = header_line(app)
+            assert 0 <= line.index("Quick Tabular Data Viewer") < 12  # just after the icon, not in the middle
+
+    run(scenario)
+
+
+def test_header_shows_the_folder_then_the_active_file_not_the_cursor_file(tmp_path):
+    folder = make_folder(tmp_path)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(240, 40)) as pilot:
+            await settle(app, pilot)
+            assert str(folder) in header_line(app) and "alpha.csv" not in header_line(app)  # nothing open yet
+            await open_first_file(app, pilot)
+            assert str(folder / "alpha.csv") in header_line(app)
+            await pilot.press("down")  # the cursor moves to beta.csv; the open file does not change
+            await pilot.pause()
+            assert "alpha.csv" in header_line(app) and "beta.csv" not in header_line(app)
+            await pilot.press("escape", "escape")  # back to the list, then close the file
+            await pilot.pause()
+            assert str(folder) in header_line(app) and "alpha.csv" not in header_line(app)
 
     run(scenario)
