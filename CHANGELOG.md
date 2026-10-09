@@ -12,6 +12,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- `o` now opens the active file (the one marked `●`) instead of the file under the
+  cursor. With no file open it still opens the file under the cursor. The Preview's top
+  line shows the hint `o: open in default program` next to the row and column count.
 - `Esc` now steps back one layer at a time: it leaves the narrow-screen Preview, then
   returns to the file list, then closes the open file (Preview, Profile, Sheets and
   the `●` mark are cleared). A pop-up still closes on `Esc`.

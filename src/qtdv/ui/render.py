@@ -14,6 +14,7 @@ from rich.text import Text
 from qtdv.profiler import Preview, Profile
 
 NAME_CLIP = 12  # longest column name shown in the Profile
+OPEN_HINT = "o: open in default program"  # shown beside the row and column count in the Preview
 GAP = "…"
 DIVIDER = "⋮"
 STRIPE = "on #262c33"  # every second preview row, a little lighter than the background
@@ -62,7 +63,9 @@ def render_preview(preview: Preview) -> Group:
         width = len(names) + (1 if preview.gap_after else 0)
         table.add_row(*[Text(DIVIDER, style="dim")] * width)
         add_rows(preview.tail)
-    return Group(Text(summary, style="bold"), table)
+    line = Text(summary, style="bold")
+    line.append(f"   {OPEN_HINT}", style="dim")
+    return Group(line, table)
 
 
 def render_profile(profile: Profile) -> Group:

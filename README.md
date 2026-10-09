@@ -81,7 +81,7 @@ so on. The selected file's full path and level also show in the header.
 | `p` | On a narrow terminal (under 110 columns), switch between the Preview (full screen) and the Files / Profile / Sheets panels. Wide terminals show everything at once. Picking a file on a narrow terminal opens the Preview by itself. |
 | `g` / `G` | Jump to the next / previous panel: Files, Profile, Sheets / Tables, Preview. The panel with focus shows a `▸` in its title. Sheets / Tables is skipped when it is hidden. |
 | `j` `k` `h` `l` | Move like Vim inside the panel that has focus: `j`/`k` move down/up (in Files, the row cursor), `h`/`l` scroll left/right. Arrow keys, PageUp/PageDown, Home and End work too. |
-| `o` | Open the file under the cursor in the program your system uses for it (Excel or LibreOffice for workbooks, your spreadsheet or text editor for CSV and TSV). Works on Windows, macOS and Linux (Linux needs `xdg-open`). |
+| `o` | Open the active file (the one marked `●`; the file under the cursor when none is open) in the program your system uses for it (Excel or LibreOffice for workbooks, your spreadsheet or text editor for CSV and TSV). Works on Windows, macOS and Linux (Linux needs `xdg-open`). |
 | `F5` | Scan the disk again to pick up new or changed files |
 | `Esc` | Step back: leave the narrow-screen Preview, then return to the file list, then close the open file (clears Preview, Profile and the `●` mark) |
 | `q` | Quit |

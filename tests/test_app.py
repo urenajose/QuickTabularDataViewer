@@ -1023,3 +1023,19 @@ def test_o_in_the_search_box_types_a_letter(tmp_path, monkeypatch):
             assert app.query_one("#search", Input).value == "o" and opened == []
 
     run(scenario)
+
+
+def test_o_opens_the_active_file_even_when_the_cursor_is_on_another(tmp_path, monkeypatch):
+    folder = make_folder(tmp_path)
+    opened = []
+    monkeypatch.setattr(app_module, "open_in_default_program", opened.append)
+
+    async def scenario():
+        app = QtdvApp(folder, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            await open_first_file(app, pilot)  # alpha.csv is now the active file
+            await pilot.press("down", "o")  # the cursor moves to beta.csv, but alpha.csv is the open one
+            assert opened == [folder / "alpha.csv"]
+
+    run(scenario)

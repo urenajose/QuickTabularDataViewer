@@ -93,3 +93,9 @@ def test_profile_clips_long_column_names_at_12_characters():
     out = text_of(render_profile(profile(df)))
     assert "abcdefghijk…" in out  # 11 characters and an ellipsis make 12
     assert "abcdefghijkl" not in out
+
+
+def test_preview_summary_line_tells_how_to_open_the_file():
+    out = text_of(render_preview(build_preview(pd.DataFrame({"n": [1, 2]}))))
+    first_line = out.splitlines()[0]
+    assert "2 rows × 1 columns" in first_line and "o: open in default program" in first_line

@@ -339,8 +339,9 @@ class QtdvApp(App):
         self.query_one("#main").toggle_class("show-preview")
 
     def action_open_external(self) -> None:
-        """Open the file under the cursor in the program the operating system uses for it."""
-        record = self._cursor_record
+        """Open the active file (the one marked ``●``), or the one under the cursor when none is open,
+        in the program the operating system uses for it."""
+        record = self.current or self._cursor_record
         if record is None:
             self._set_status("No file to open")
             return

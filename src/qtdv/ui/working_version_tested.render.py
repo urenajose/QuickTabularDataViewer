@@ -13,8 +13,10 @@ from rich.text import Text
 
 from qtdv.profiler import Preview, Profile
 
+NAME_CLIP = 12  # longest column name shown in the Profile
 GAP = "…"
 DIVIDER = "⋮"
+STRIPE = "on #262c33"  # every second preview row, a little lighter than the background
 
 
 def _cell(value) -> Text:
@@ -37,7 +39,7 @@ def render_preview(preview: Preview) -> Group:
     summary = f"{preview.total_rows:,} rows × {preview.total_cols:,} columns"
     if preview.hidden_cols:
         summary += f" · {preview.hidden_cols:,} not shown"
-    table = Table(header_style="bold cyan")
+    table = Table(header_style="bold cyan", row_styles=["", STRIPE])
     names = list(preview.head.columns)
     if not names:  # Rich prints nothing for a table with no columns
         table.add_column(Text("(no columns)", style="dim"))
@@ -69,7 +71,8 @@ def render_profile(profile: Profile) -> Group:
 
     columns = Table(title="Columns", header_style="bold cyan")
     for heading in ("Column", "dtype", "nulls", "unique"):
-        columns.add_column(Text(heading), no_wrap=True, overflow="ellipsis", max_width=24)
+        # Column names are clipped at 12 cells (with an ellipsis) so the Profile panel stays narrow.
+        columns.add_column(Text(heading), no_wrap=True, overflow="ellipsis", max_width=NAME_CLIP if heading == "Column" else 24)
     for name, row in profile.columns.iterrows():
         columns.add_row(Text(str(name)), Text(row["dtype"]), Text(f"{row['nulls']:,}"), Text(f"{row['unique']:,}"))
 
