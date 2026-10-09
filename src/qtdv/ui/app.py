@@ -29,6 +29,8 @@ TYPE_CHOICES: list[tuple[str, frozenset[str] | None]] = [
 ]
 SEP = "\x1f"  # separates parts of an option id; cannot appear in a sheet name
 PANEL_TITLES = {"#files": "Files", "#sheets": "Sheets / Tables", "#preview-box": "Preview", "#profile-box": "Profile"}
+NAME_COLUMN = 2  # index of "Name" in FILE_COLUMNS
+NAME_WRAP_WIDTH = 24  # long file names wrap at this many characters
 FILE_COLUMNS = ("", "Lvl", "Name", "Folder", "Modified", "Size")
 OPENED_STYLE = "black on #b7e4c7"  # light green tint for the file that is open
 COLUMN_WIDTH = 10  # rough width of one preview column, used to pick how many fit
@@ -170,28 +172,45 @@ class QtdvApp(App):
         labels = FILE_COLUMNS  # the first column holds the opened-file dot
         rows = [self._row_values(rec, rec == self.current) for rec in self.shown_files]
         self._widths = [max([cell_len(label)] + [cell_len(row[i]) for row in rows]) for i, label in enumerate(labels)]
+        self._widths[NAME_COLUMN] = min(self._widths[NAME_COLUMN], NAME_WRAP_WIDTH)  # long names wrap
         table.clear(columns=True)  # columns too, so widths shrink again after a filter
         self._cursor_record = None
         self._column_keys = [table.add_column(self._pad(label, w)) for label, w in zip(labels, self._widths)]
         for rec in self.shown_files:
-            table.add_row(*self._row_cells(rec), key=str(rec.path))
+            table.add_row(*self._row_cells(rec), key=str(rec.path), height=None)  # height=None: as tall as the longest cell
         self._sync_cursor()
 
     @staticmethod
-    def _pad(value: str, width: int) -> str:
-        return f" {value}{' ' * (width - cell_len(value))} "
+    def _wrap(value: str, width: int) -> list[str]:
+        """Cut ``value`` into pieces that are at most ``width`` cells wide."""
+        lines, line = [], ""
+        for char in value:
+            if line and cell_len(line + char) > width:
+                lines.append(line)
+                line = ""
+            line += char
+        return lines + [line]
+
+    @classmethod
+    def _pad(cls, value: str, width: int) -> str:
+        """One cell: each line wrapped to ``width`` and padded with a space on each side."""
+        return "\n".join(f" {line}{' ' * (width - cell_len(line))} " for line in cls._wrap(value, width))
 
     def _row_cells(self, rec: FileRecord) -> list[Text]:
         """Cells for one row. The opened file gets a dot and a light green tint.
 
         Each cell is padded to its full column width (the table itself adds no padding), so the tint
-        runs unbroken across the row. While the cursor is on the opened row the tint is left off,
-        so the cursor colour is not mixed with it.
+        runs unbroken across the row. A cell shorter than the tallest one gets blank lines, so the tint
+        also covers the extra lines of a wrapped name. While the cursor is on the opened row the tint
+        is left off, so the cursor colour is not mixed with it.
         """
         opened = rec == self.current
         style = OPENED_STYLE if opened and rec != self._cursor_record else ""
+        cells = [self._pad(v, w).split("\n") for v, w in zip(self._row_values(rec, opened), self._widths)]
+        height = max(len(lines) for lines in cells)
+        blank = [" " * (w + 2) for w in self._widths]
         # Text so names such as "Report [final].csv" are not read as markup
-        return [Text(self._pad(v, w), style=style) for v, w in zip(self._row_values(rec, opened), self._widths)]
+        return [Text("\n".join(lines +[blank[i]] * (height - len(lines))), style=style) for i, lines in enumerate(cells)]
 
     def _restyle_rows(self, *records: FileRecord | None) -> None:
         """Redraw the given rows in place, so the cursor does not move."""

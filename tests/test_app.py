@@ -560,3 +560,45 @@ def test_wide_layout_has_files_over_sheets_and_profile_with_preview_on_the_right
             assert preview.height >= files.height + sheets.height  # and as tall as the left column
 
     run(scenario)
+
+
+LONG_NAME = "a" * 40 + ".csv"  # 44 characters: wraps into 24 + 20
+
+
+def test_long_names_wrap_at_24_characters_into_taller_rows(tmp_path):
+    (tmp_path / LONG_NAME).write_text("x\n1\n")
+    (tmp_path / "z.csv").write_text("x\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            long_row, short_row = table.ordered_rows
+            assert long_row.height == 2 and short_row.height == 1
+            name_cell = table.get_row(str(tmp_path / LONG_NAME))[2].plain
+            lines = name_cell.split("\n")
+            assert [line.strip() for line in lines] == ["a" * 24, "a" * 16 + ".csv"]
+            assert {len(line) for line in lines} == {26}  # every line padded to the full column width
+
+    run(scenario)
+
+
+def test_wrapped_row_tint_has_no_gaps_on_any_line(tmp_path):
+    (tmp_path / LONG_NAME).write_text("x\n1\n")
+    (tmp_path / "z.csv").write_text("x\n1\n")
+
+    async def scenario():
+        app = QtdvApp(tmp_path, depth=0)
+        async with app.run_test(size=(160, 50)) as pilot:
+            await settle(app, pilot)
+            table = app.query_one("#files", DataTable)
+            table.focus()
+            await pilot.press("enter")  # opens the long-named file (first row)
+            await settle(app, pilot)
+            await pilot.press("down")
+            await pilot.pause()
+            for y in (1, 2):  # both lines of the wrapped row
+                assert set(row_backgrounds(table, y)[:-1]) == {"#b7e4c7"}, y
+
+    run(scenario)

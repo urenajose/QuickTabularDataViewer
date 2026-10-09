@@ -7,6 +7,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- Long file names in the Files panel wrap at 24 characters, so the Folder,
+  Modified and Size columns fit on screen. The row grows taller and the tint
+  covers every line.
 - New layout: Files on top left, Sheets / Tables and Profile below it, and the
   Preview in its own column on the right. On a narrow terminal the `p` key now
   switches between the Preview and the left-hand panels.
