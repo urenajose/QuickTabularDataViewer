@@ -120,9 +120,13 @@ def test_us_states_sample_file_loads():
 
     df = load_table(Path(__file__).parent / "data" / "us_states_and_abbreviations.csv")
     assert df.shape == (43, 3)
-    # Florida and New York have an unquoted comma in Notes, so they have one field too many
-    assert [note.split(":")[0] for note in df.attrs["notes"]] == ["line 10", "line 33"]
-    # Texas has a comma too, but its Notes value is quoted ("" escapes the quotes), so it is fine
+    # every data row ends with a stray comma (the header does not), so all 43 rows are reported:
+    # the first 10 one by one, then a single "10+" line with the total
+    notes = df.attrs["notes"]
+    assert len(notes) == 11 and notes[0].startswith("line 2:") and notes[9].startswith("line 11:")
+    assert "10+" in notes[10] and "43" in notes[10]
+    assert df.attrs["summary"] == ["43 rows had extra fields and the extra values were cut"]
+    # a comma inside quotes stays in the value ("" stands for one quote mark)
     assert df.loc[df["State"] == "Texas", "Notes"].tolist() == ['"Austin, South-Central"']
 
 

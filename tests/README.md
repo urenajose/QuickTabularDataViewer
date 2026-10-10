@@ -36,8 +36,8 @@ not been approved, so this file is supplied by hand.
 ## Other sample files in `tests\data`
 
 - `us_states_and_abbreviations.csv` - a public list of US states with a `Notes` column. It is an
-  example of the three kinds of comma:
-  - Florida (line 10) and New York (line 33) have an **unquoted** comma in Notes, so each row has
-    one field too many. They are cut and reported, one warning per row, instead of failing.
-  - Texas has a comma too, but its value is **quoted** (`"""Austin, South-Central"""`, where `""`
-    stands for one quote mark), so it is a normal value and gets no warning.
+  example of bad rows: every data row ends with a stray comma (the header does not), so every row has
+  one field too many. That makes 43 warnings, which shows the "first 10 listed, then `10+`" message.
+  Florida also has an unquoted comma inside its note (two extra fields). Texas has a comma inside
+  quotes (`"""Austin, South-Central"""`, where `""` stands for one quote mark), which stays part of
+  the value.
