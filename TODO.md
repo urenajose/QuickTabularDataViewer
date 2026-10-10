@@ -6,9 +6,7 @@ Things that are waiting for a decision or that were put off on purpose.
 
 ## Waiting for a decision
 
-- [ ] `tests/data/5677d895bf4e48a9a34bf4e4d9ef1291.xlsx` is untracked on purpose.
-      Check that it holds no real client data before it is added to git. If it
-      does, add private test files to `.gitignore` instead.
+- [x] DONE 2026-10-09: `tests/data/5677d895bf4e48a9a34bf4e4d9ef1291.xlsx` is public HUD data and is now tracked.
 - [ ] Delete the local backup branch `backup/pre-rewrite-2026-10-08` when it is
       no longer needed.
 
