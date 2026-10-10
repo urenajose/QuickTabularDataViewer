@@ -41,3 +41,10 @@ not been approved, so this file is supplied by hand.
   Florida also has an unquoted comma inside its note (two extra fields). Texas has a comma inside
   quotes (`"""Austin, South-Central"""`, where `""` stands for one quote mark), which stays part of
   the value.
+- `5677d895bf4e48a9a34bf4e4d9ef1291.xlsx` - public HUD data (veteran homelessness counts by state;
+  the first sheet names its source on huduser.gov). It has 23 sheets, so it is a good file for trying
+  the Sheets / Tables panel, a pivot sheet and wide tables.
+- `file_example_XLS_50.tsv` and `file_example_XLS_50.txt` - the public `file_example_XLS_50` sample as
+  tab-separated text. Only the `.tsv` is listed by qtdv; the `.txt` copy is not a supported type.
+- `file_example_XLS_50_password.xlsx` - the same sample saved with a password, to try the
+  "Workbook is password-protected and cannot be read" message.
