@@ -44,6 +44,10 @@ not been approved, so this file is supplied by hand.
 - `5677d895bf4e48a9a34bf4e4d9ef1291.xlsx` - public HUD data (veteran homelessness counts by state;
   the first sheet names its source on huduser.gov). It has 23 sheets, so it is a good file for trying
   the Sheets / Tables panel, a pivot sheet and wide tables.
+- `table01.xlsx` - public U.S. Census Bureau table (nativity of the population, 1850 to 1990; the
+  sheet names its source). Title and note rows sit above and below the numbers, so every column
+  mixes text and numbers: a good file for the Profile type labels (`mixed (text+number)`) and
+  for the planned header-row detection (see `TODO.md`).
 - `file_example_XLS_50.tsv` and `file_example_XLS_50.txt` - the public `file_example_XLS_50` sample as
   tab-separated text. Only the `.tsv` is listed by qtdv; the `.txt` copy is not a supported type.
 - `file_example_XLS_50_password.xlsx` - the same sample saved with a password, to try the
