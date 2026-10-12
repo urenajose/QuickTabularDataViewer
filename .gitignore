@@ -5,3 +5,6 @@ __pycache__/
 
 # Local terminal captures (personal shell output, not part of the project)
 terminal screen output/
+
+# Office lock files (created while a workbook is open)
+~$*
