@@ -12,6 +12,9 @@ Format: https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+- The Profile panel no longer shows a bare `object` type. A column that pandas stores as `object`
+  now says what it holds: `text`, `number`, `date`, `bool`, `empty`, `mixed (text+number)`,
+  `mixed (text+date)`, or plain `mixed`. Typed columns (`int64`, `float64`, `str`, ...) are unchanged.
 - A CSV or TSV row with too many fields now gets its own yellow warning above the Preview, with
   its line number (`line 10: 4 fields instead of 3, extra values cut`). The first 10 are listed,
   then one line says `10+ rows had extra fields` with the total. The status line shows a short

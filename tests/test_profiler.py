@@ -68,3 +68,34 @@ def test_profile_handles_mixed_and_cleaned_headers():  # Review Focus 2
     prof = profile(df)
     assert list(prof.columns.index) == ["Unnamed: 0", "a", "a.1"]
     assert prof.columns.loc["a.1", "nulls"] == 2
+
+
+def dtype_of(values):
+    return profile(pd.DataFrame({"c": pd.Series(values, dtype=object)})).columns.loc["c", "dtype"]
+
+
+def test_dtype_names_typed_columns_as_pandas_does():
+    df = pd.DataFrame({"i": [1, 2], "f": [1.5, 2.5], "s": ["a", "b"]})
+    assert profile(df).columns["dtype"].to_dict() == {"i": "int64", "f": "float64", "s": "str"}
+
+
+def test_object_column_with_text_and_numbers_is_mixed():
+    assert dtype_of(["Total", 100, 228.5, None]) == "mixed (text+number)"
+    assert dtype_of(["Total", 100.5]) == "mixed (text+number)"  # text + float only
+
+
+def test_object_column_dtype_is_described_by_content():
+    assert dtype_of(["a", "b"]) == "text"
+    assert dtype_of([1, 2.5, None]) == "number"
+    assert dtype_of([True, False]) == "bool"
+    assert dtype_of([pd.Timestamp("2020-01-01"), None]) == "date"
+    assert dtype_of([None, None]) == "empty"
+
+
+def test_object_column_with_dates_and_text_is_mixed():
+    assert dtype_of([pd.Timestamp("2020-01-01"), "n/a"]) == "mixed (text+date)"
+
+
+def test_object_column_with_unknown_objects_is_plain_mixed():
+    assert dtype_of(["a", (1, 2)]) == "mixed"
+    assert dtype_of([(1, 2), (3, 4)]) == "mixed"

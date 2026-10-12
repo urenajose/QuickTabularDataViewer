@@ -5,6 +5,8 @@ No file reading and no UI code lives here.
 
 from __future__ import annotations
 
+import datetime
+import numbers
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -29,7 +31,7 @@ class Profile:
 
     rows: int
     cols: int
-    columns: pd.DataFrame  # index = column name; columns: dtype, nulls, unique
+    columns: pd.DataFrame  # index = column name; columns: dtype (a label), nulls, unique
 
 
 def build_preview(
@@ -61,11 +63,59 @@ def build_preview(
     return Preview(head, tail, gap_after, hidden, total_rows, total_cols)
 
 
+# What pandas' fast, C-level ``infer_dtype`` says -> the label shown to people.
+_INFERRED_LABELS = {
+    "string": "text",
+    "integer": "number",
+    "floating": "number",
+    "mixed-integer-float": "number",
+    "decimal": "number",
+    "boolean": "bool",
+    "date": "date",
+    "datetime": "date",
+    "datetime64": "date",
+    "empty": "empty",
+}
+_KIND_ORDER = ("text", "number", "date", "bool")
+
+
+def _value_kind(value: object) -> str:
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, str):
+        return "text"
+    if isinstance(value, numbers.Number):
+        return "number"
+    if isinstance(value, datetime.date):  # also covers datetime and pd.Timestamp
+        return "date"
+    return "other"
+
+
+def _describe_object(series: pd.Series) -> str:
+    """Say what an ``object`` column holds: ``text``, ``mixed (text+number)``, ..."""
+    label = _INFERRED_LABELS.get(pd.api.types.infer_dtype(series, skipna=True))
+    if label is not None:
+        return label
+    kinds = {_value_kind(v) for v in series.dropna()}
+    if len(kinds) == 1 and kinds <= set(_KIND_ORDER):
+        return kinds.pop()
+    if len(kinds) > 1 and kinds <= set(_KIND_ORDER):
+        return "mixed (" + "+".join(k for k in _KIND_ORDER if k in kinds) + ")"
+    return "mixed"
+
+
+def _dtype_label(series: pd.Series) -> str:
+    """pandas' own dtype name, except ``object`` is replaced by what the column holds."""
+    if series.dtype == object:
+        return _describe_object(series)
+    return str(series.dtype)
+
+
 def profile(df: pd.DataFrame) -> Profile:
     """Row/column counts, and per-column type, null count and unique count."""
     columns = pd.DataFrame(
         {
-            "dtype": df.dtypes.astype(str),
+            "dtype": pd.Series([_dtype_label(df.iloc[:, i]) for i in range(df.shape[1])], index=df.columns, dtype=str),
             "nulls": df.isna().sum(),
             "unique": df.nunique(dropna=True),
         }

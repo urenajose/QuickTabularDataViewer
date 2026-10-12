@@ -21,6 +21,9 @@ Things that are waiting for a decision or that were put off on purpose.
 
 ## Put off (minor)
 
+- [ ] Detect the real header row in messy sheets (title and note rows above the header, like Census
+      tables), so `Unnamed: 1 ... 7` become the real names and most columns turn numeric. Parked
+      2026-10-12 until other work is done.
 - [ ] The encoding fallback reads a large file again for each encoding it tries.
 - [ ] Every keystroke in the search box rebuilds the whole file table.
 - [ ] A semicolon-delimited CSV loads as one column.
