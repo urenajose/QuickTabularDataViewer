@@ -1,0 +1,10 @@
+# Let git decide line endings: text files are stored with LF in the repository
+# and checked out with the system's own line ending (CRLF on Windows).
+* text=auto
+
+# Never touch these: they are binary, or must keep their exact bytes.
+*.xlsx binary
+*.xlsm binary
+*.xls  binary
+*.ods  binary
+*.png  binary
